@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Intelligent alarm</string>
+    <string name="action_settings">Settings</string>
+    <string name="section_format">Hello World from section: %1$d</string>
+    <string name="repeat">Repeat</string>
+    <string name="type">Alarm type</string>
+    <string name="postpone_alarm">Postpone alarm</string>
+    <string name="intelligent_alarm">Intelligent alarm</string>
+    <string name="name">Name</string>
+    <string name="alarm_tone">Alarm tone</string>
+    <string name="every_day">Every day</string>
+    <string name="sunday">Su</string>
+    <string name="monday">Mo</string>
+    <string name="tuesday">Tu</string>
+    <string name="wednesday">We</string>
+    <string name="thursday">Th</string>
+    <string name="friday">Fr</string>
+    <string name="saturday">Sa</string>
+    <string name="sound">Sound</string>
+    <string name="vibration">Vibration</string>
+    <string name="both">Sound and vibration</string>
+    <string name="times">times</string>
+    <string name="minutes">minutes</string>
+    <string name="minute">minute</string>
+    <string name="default_alarm">Wake up!!!</string>
+    <string name="tomorow">Tomorrow</string>
+
+</resources>

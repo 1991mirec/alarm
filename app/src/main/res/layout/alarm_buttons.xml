@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:descendantFocusability="blocksDescendants"
+    android:layout_height="wrap_content">
+
+    <ImageButton
+        android:id="@+id/imageButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:padding="15sp"
+        app:srcCompat="@mipmap/alarm_black"
+        android:background="@android:color/transparent" />
+
+    <TextView
+        android:id="@+id/textViewTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="20sp"
+        android:text="10:30"
+        android:textColor="@android:color/background_dark"
+        android:textSize="30sp" />
+
+    <TextView
+        android:id="@+id/textViewName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/textViewTime"
+        android:layout_toStartOf="@id/imageButton"
+        android:paddingEnd="15sp"
+        android:paddingStart="15sp"
+        android:paddingTop="15sp"
+        android:text="TextView"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/textViewRepeat"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/textViewName"
+        android:layout_toEndOf="@id/textViewTime"
+        android:layout_toStartOf="@id/imageButton"
+        android:paddingEnd="15sp"
+        android:paddingStart="15sp"
+        android:text="TextView"
+        android:textSize="14sp" />
+</RelativeLayout>
+

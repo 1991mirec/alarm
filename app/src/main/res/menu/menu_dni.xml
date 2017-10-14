@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:id="@+id/context_menu"
+        android:checkableBehavior="all">
+        <item android:id="@+id/item1"
+            android:checkable="true"
+            android:title="Pondelok" />
+        <item android:id="@+id/item2"
+            android:checkable="true"
+            android:title="Utorok" />
+        <item android:id="@+id/item3"
+            android:checkable="true"
+            android:title="Streda" />
+        <item android:id="@+id/item4"
+            android:checkable="true"
+            android:title="Štvrtok" />
+        <item android:id="@+id/item5"
+            android:checkable="true"
+            android:title="Piatok" />
+        <item android:id="@+id/item6"
+            android:checkable="true"
+            android:title="Sobota" />
+        <item android:id="@+id/item7"
+            android:checkable="true"
+            android:title="Nedeľa" />
+    </group>
+</menu>
