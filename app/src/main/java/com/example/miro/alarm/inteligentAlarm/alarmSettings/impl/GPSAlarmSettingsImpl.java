@@ -1,28 +1,35 @@
 package com.example.miro.alarm.inteligentAlarm.alarmSettings.impl;
 
 
+import android.content.Context;
+import android.view.View;
+import android.widget.ImageButton;
+
+import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.Settings;
-import com.example.miro.alarm.inteligentAlarm.alarmSettings.api.Default;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.api.GPSAlarmSettings;
 import com.example.miro.alarm.inteligentAlarm.enums.ConnectionType;
-import com.example.miro.alarm.inteligentAlarm.enums.Type;
-import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
-import com.example.miro.alarm.inteligentAlarm.helper.Repeat;
 
 import java.io.Serializable;
 
-public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, Default, Serializable {
+public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, Serializable {
 
     private int radius;
     private int coordinates;
     private ConnectionType conectionType;
 
-    public GPSAlarmSettingsImpl(int volume, String song, String name, Type type, Postpone postpone, int radius,
-                                int coordinates, ConnectionType conectionType, boolean isOn, Repeat repeat) {
-        super(volume,song,name,type,postpone, isOn, repeat);
-        this.radius = radius;
-        this.coordinates = coordinates;
-        this.conectionType = conectionType;
+    private transient Context context;
+
+    private transient ImageButton imgAlarm;
+
+    public GPSAlarmSettingsImpl(final Context context, final int id) {
+        super(context.getString(R.string.default_alarm));
+        this.context = context;
+        setId(id);
+    }
+
+    public void setVisuals(final View view){
+
     }
 
     public int getRadius() {
@@ -45,9 +52,5 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
         return coordinates;
     }
 
-    @Override
-    public void setDefault(final int id) {
-
-    }
 }
 

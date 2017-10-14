@@ -2,6 +2,7 @@ package com.example.miro.alarm.inteligentAlarm.alarmSettings;
 
 import android.support.test.espresso.core.deps.guava.base.Preconditions;
 
+import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.enums.Type;
 import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
 import com.example.miro.alarm.inteligentAlarm.helper.Repeat;
@@ -46,8 +47,14 @@ public class Settings implements Serializable {
 
     }
 
-    protected Settings() {
-
+    protected Settings(final String name) {
+        volume = 1;
+        this.name = name;
+        song = new SongImpl("loud_alarm_buzzer.mp3");
+        type = new TypeImpl(Type.BOTH);
+        postpone = new Postpone(1, 1, false);
+        repeat = new Repeat();
+        isOn = false;
     }
 
     public boolean isOn() {

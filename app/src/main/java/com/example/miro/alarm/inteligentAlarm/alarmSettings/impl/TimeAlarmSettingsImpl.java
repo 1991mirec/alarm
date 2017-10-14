@@ -10,14 +10,8 @@ import android.widget.TextView;
 
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.Settings;
-import com.example.miro.alarm.inteligentAlarm.alarmSettings.api.Default;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.api.TimeAlarmSettings;
-import com.example.miro.alarm.inteligentAlarm.enums.Type;
 import com.example.miro.alarm.inteligentAlarm.helper.InteligentAlarm;
-import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
-import com.example.miro.alarm.inteligentAlarm.helper.Repeat;
-import com.example.miro.alarm.inteligentAlarm.helper.SongImpl;
-import com.example.miro.alarm.inteligentAlarm.helper.TypeImpl;
 import com.example.miro.alarm.inteligentAlarm.helper.Utils;
 import com.example.miro.alarm.receiver.TimeAlarmReceiver;
 
@@ -27,14 +21,14 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
-public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings, Default, Serializable {
+public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings, Serializable {
 
     private static final int REQ_CODE_WAKE_UP = 70;
 
 
     private InteligentAlarm inteligentAlarm;
     private Calendar time;
-    private transient AlarmManager manager[] = new AlarmManager[8];
+    private transient AlarmManager manager[] = new AlarmManager[8]; // days of week plus whole week
     private transient AlarmManager managerInteligent[] = new AlarmManager[8];
     private transient PendingIntent pendingIntent[] = new PendingIntent[8];
     private transient PendingIntent pendingIntentInteligent[] = new PendingIntent[8];
@@ -42,13 +36,19 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
 
     private transient ImageButton imgAlarm;
 
-    public TimeAlarmSettingsImpl(final Context context) {
-        super();
+    public TimeAlarmSettingsImpl(final Context context, final int id) {
+        super(context.getString(R.string.default_alarm));
         this.context = context;
         for (int i = 0; i < 8; i++) {
             this.manager[i] = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
             this.managerInteligent[i] = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         }
+        final Calendar calendar = new GregorianCalendar(TimeZone.getDefault());
+        final Date time = new Date();
+        calendar.setTime(time);
+        this.time = calendar;
+        this.inteligentAlarm = new InteligentAlarm("loud_alarm_buzzer.mp3", 1, false);
+        setId(id);
     }
 
     public void cancelAlarm(final int ids, final boolean visualOff) {System.out.println("cacnle" + ids);
@@ -94,23 +94,6 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
     @Override
     public Calendar getTime() {
         return time;
-    }
-
-    @Override
-    public void setDefault(final int id) {
-        final Calendar calendar = new GregorianCalendar(TimeZone.getDefault());
-        final Date time = new Date();
-        calendar.setTime(time);
-        this.time = calendar;
-        this.inteligentAlarm = new InteligentAlarm("loud_alarm_buzzer.mp3", 1, false);
-        volume = 1;
-        name = context.getString(R.string.default_alarm);
-        song = new SongImpl("loud_alarm_buzzer.mp3");
-        type = new TypeImpl(Type.BOTH);
-        postpone = new Postpone(1, 1, false);
-        repeat = new Repeat();
-        isOn = false;
-        setId(id);
     }
 
     public void setVisuals(final View view) {

@@ -8,6 +8,7 @@ import android.widget.TextView;
 
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.adapters.TimeAlarmSettingsAdapter;
+import com.example.miro.alarm.inteligentAlarm.adapters.holders.TypeHolder;
 import com.example.miro.alarm.inteligentAlarm.enums.Type;
 
 import java.io.Serializable;
@@ -32,7 +33,7 @@ public class TypeImpl implements Serializable{
         return type;
     }
 
-    public View setVisual(final LayoutInflater inflater, final ViewGroup parent, final TimeAlarmSettingsAdapter.TypeHolder typeHolder){
+    public View setVisual(final LayoutInflater inflater, final ViewGroup parent, final TypeHolder typeHolder){
         View row = inflater.inflate(R.layout.two_text_fields,parent,false);
         typeHolder.changingText = (TextView) row.findViewById(R.id.changingTxtView_twoFields);
         typeHolder.mainText = (TextView) row.findViewById(R.id.mainTxtView_twoFields);
@@ -42,7 +43,7 @@ public class TypeImpl implements Serializable{
         return row;
     }
 
-    public void set(final TimeAlarmSettingsAdapter.TypeHolder typeHolder, final Context context) {
+    public void set(final TypeHolder typeHolder, final Context context) {
         final String typeInString = Utils.typeToString(type, context);
 
         typeHolder.changingText.setText(typeInString);

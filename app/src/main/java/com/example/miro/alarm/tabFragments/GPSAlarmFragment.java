@@ -1,19 +1,24 @@
 package com.example.miro.alarm.tabFragments;
 
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 
 import com.example.miro.alarm.R;
+import com.example.miro.alarm.inteligentAlarm.adapters.GpsAlarmAdapter;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.GPSAlarmSettingsImpl;
-import com.example.miro.alarm.inteligentAlarm.enums.ConnectionType;
-import com.example.miro.alarm.inteligentAlarm.enums.Type;
-import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
-import com.example.miro.alarm.inteligentAlarm.helper.Repeat;
+import com.example.miro.alarm.main.GpsAlarmSettingActivity;
 
 /**
  * Created by Miro on 11/22/2016.
@@ -21,38 +26,53 @@ import com.example.miro.alarm.inteligentAlarm.helper.Repeat;
 
 public class GPSAlarmFragment extends PlaceholderFragment implements FragmentSetter {
 
+    private Context context;
+    private View rootView;
+    private Activity activity;
+    private static final int REQ_CODE = 79;
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-        /*TextView textView = (TextView) rootView.findViewById(R.id.section_label);
-        textView.setText(getString(R.string.section_format, getArguments().getInt(ARG_SECTION_NUMBER)));*/
+        setHasOptionsMenu(true);
+        context = getContext();
+        rootView = inflater.inflate(R.layout.fragment_main, container, false);
+        initiateButtons();
+        activity = getActivity();
 
-        ((ViewGroup) rootView).addView(initiateButtons());
         return rootView;
+    }
+
+
+    private void addButton() {
+        final GPSAlarmSettingsImpl gpsAlarmSettings = new GPSAlarmSettingsImpl(context,
+                gpsSettings.size());
+        gpsSettings.add(gpsAlarmSettings);
+
+        refresh();
     }
 
     @Override
     public LinearLayout initiateButtons() {
-        LinearLayout linearLayout = new LinearLayout(getActivity());
-        // Set the layout full width, full height
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
+        final ListView listView = (ListView) rootView.findViewById(R.id.listViewAlarm);
 
-        linearLayout.setLayoutParams(params);
-        linearLayout.setOrientation(LinearLayout.HORIZONTAL);
         if (gpsSettings.isEmpty()) {
-            final GPSAlarmSettingsImpl gpsAlarmSettings = new GPSAlarmSettingsImpl(1, "mySong", "Banska Stiavnica",
-                    Type.BOTH, new Postpone(1, 1, false), 10, 10, ConnectionType.GPS, false, new Repeat());
-
-            linearLayout.addView(createButton(gpsAlarmSettings.getName() + "  " + gpsAlarmSettings.getRadius()));
-            gpsSettings.add(gpsAlarmSettings);
-        } else {
-            for (final GPSAlarmSettingsImpl settings : gpsSettings) {
-                linearLayout.addView(createButton(settings.getName() + "  " + settings.getRadius()));
-            }
+            addButton();
         }
-        return linearLayout;
+
+        final GpsAlarmAdapter adapter = new GpsAlarmAdapter(context, R.layout.gps_buttons,
+                gpsSettings.toArray(new GPSAlarmSettingsImpl[gpsSettings.size()]));
+
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Intent intent = new Intent(getActivity(), GpsAlarmSettingActivity.class);
+                intent.putExtra("gpsSetting", gpsSettings.get(position));
+                startActivityForResult(intent, REQ_CODE);
+            }
+        });
+        listView.setAdapter(adapter);
+        return null;
     }
 
     @Override
@@ -74,5 +94,16 @@ public class GPSAlarmFragment extends PlaceholderFragment implements FragmentSet
     @Override
     public void removeButton(int id) {
         gpsSettings.remove(id);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(final MenuItem item) {
+        addButton();
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void refresh() {
+        FragmentTransaction ft = getFragmentManager().beginTransaction();
+        ft.detach(this).attach(this).commit();
     }
 }

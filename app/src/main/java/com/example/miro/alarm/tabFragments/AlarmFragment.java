@@ -45,8 +45,8 @@ public class AlarmFragment extends PlaceholderFragment implements FragmentSetter
 
 
     private void addButton() {
-        final TimeAlarmSettingsImpl timeAlarmSettings = new TimeAlarmSettingsImpl(context);
-        timeAlarmSettings.setDefault(timeSettings.size());
+        final TimeAlarmSettingsImpl timeAlarmSettings = new TimeAlarmSettingsImpl(context,
+                timeSettings.size());
         timeSettings.add(timeAlarmSettings);
 
         refresh();

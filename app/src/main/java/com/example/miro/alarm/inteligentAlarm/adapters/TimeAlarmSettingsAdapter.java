@@ -14,6 +14,7 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 
 import com.example.miro.alarm.R;
+import com.example.miro.alarm.inteligentAlarm.adapters.holders.TypeHolder;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.TimeAlarmSettingsImpl;
 
 import java.util.Calendar;
@@ -195,11 +196,6 @@ public class TimeAlarmSettingsAdapter extends BaseAdapter {
     }
 
     public static class RepeatHolder {
-        public TextView changingText;
-        public TextView mainText;
-    }
-
-    public static class TypeHolder {
         public TextView changingText;
         public TextView mainText;
     }
