@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -18,6 +17,7 @@ import android.widget.ListView;
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.adapters.GpsAlarmAdapter;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.GPSAlarmSettingsImpl;
+import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.TimeAlarmSettingsImpl;
 import com.example.miro.alarm.main.GpsAlarmSettingActivity;
 
 /**
@@ -76,8 +76,23 @@ public class GPSAlarmFragment extends PlaceholderFragment implements FragmentSet
     }
 
     @Override
-    public Button createButton(final String name) {
-        final Button button = new Button(getActivity());
+    public void onActivityResult(final int requestCode, final int resultCode, final Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == Activity.RESULT_OK) {
+            final GPSAlarmSettingsImpl gpsSettingsReturned = (GPSAlarmSettingsImpl) data.getExtras()
+                    .getSerializable("gpsSettings");
+
+            final int id = gpsSettingsReturned.getId();
+            gpsSettings.get(id).setAlarm(gpsSettingsReturned);
+            //gpsSettings.get(id).setAlarmManager();
+
+            refresh();
+        }
+    }
+
+    @Override
+    public Button createButton(final String name) {return null;
+        /*final Button button = new Button(getActivity());
         button.setLayoutParams(new Toolbar.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
 
@@ -88,7 +103,7 @@ public class GPSAlarmFragment extends PlaceholderFragment implements FragmentSet
 
             }
         });
-        return button;
+        return button;*/
     }
 
     @Override

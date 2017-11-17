@@ -8,15 +8,15 @@ import android.widget.ImageButton;
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.Settings;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.api.GPSAlarmSettings;
-import com.example.miro.alarm.inteligentAlarm.enums.ConnectionType;
+import com.google.android.gms.maps.model.LatLng;
 
 import java.io.Serializable;
 
 public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, Serializable {
 
     private int radius;
-    private int coordinates;
-    private ConnectionType conectionType;
+    private double latitude;
+    private double longitude;
 
     private transient Context context;
 
@@ -25,10 +25,13 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
     public GPSAlarmSettingsImpl(final Context context, final int id) {
         super(context.getString(R.string.default_alarm));
         this.context = context;
+        this.latitude = 45;
+        this.longitude = 45;
+        this.radius = 1000;
         setId(id);
     }
 
-    public void setVisuals(final View view){
+    public void setVisuals(final View view) {
 
     }
 
@@ -37,20 +40,28 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
         return radius;
     }
 
-/*    public boolean setSettings(AlarmSettings alarmSettings) {
+    public LatLng getCoordinates() {
         // TODO implement me
-        return false;
-    }*/
-
-    public ConnectionType getConectionType() {
-        // TODO implement me
-        return conectionType;
+        return new LatLng(latitude, longitude);
     }
 
-    public int getCoordinates() {
-        // TODO implement me
-        return coordinates;
+    public void setAlarm(GPSAlarmSettingsImpl alarm) {
+        volume = alarm.getVolume();
+        song = alarm.getSong();
+        name = alarm.getName();
+        type = alarm.getType();
+        postpone = alarm.getPostpone();
+        repeat = alarm.repeat;
+        isOn = true;
     }
 
+    public void setLatLng(final LatLng latLng) {
+        this.latitude = latLng.latitude;
+        this.longitude = latLng.longitude;
+    }
+
+    public void setRadius(final int radius) {
+        this.radius = radius;
+    }
 }
 

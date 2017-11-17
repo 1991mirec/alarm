@@ -40,10 +40,12 @@ public class DaysDialogFragment extends DialogFragment {
         // mSelectedItems = new ArrayList();  // Where we track the selected items
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         // Set the dialog title
+        CharSequence cs[] = {"Sunday", "Monday", "Tuesday", "Wednesday",
+                "Thrusday", "Friday", "Saturday"};
         builder.setTitle("Title")
                 // Specify the list array, the items to be selected by default (null for none),
                 // and the listener through which to receive callbacks when items are selected
-                .setMultiChoiceItems(R.array.days, repeat.getDays(),
+                .setMultiChoiceItems(cs, repeat.getDays(),
                         new DialogInterface.OnMultiChoiceClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which,

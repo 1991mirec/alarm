@@ -14,7 +14,12 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 
 import com.example.miro.alarm.R;
+import com.example.miro.alarm.inteligentAlarm.adapters.holders.NameHolder;
+import com.example.miro.alarm.inteligentAlarm.adapters.holders.PostponeHolder;
+import com.example.miro.alarm.inteligentAlarm.adapters.holders.RepeatHolder;
+import com.example.miro.alarm.inteligentAlarm.adapters.holders.SongHolder;
 import com.example.miro.alarm.inteligentAlarm.adapters.holders.TypeHolder;
+import com.example.miro.alarm.inteligentAlarm.adapters.holders.VolumeHolder;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.TimeAlarmSettingsImpl;
 
 import java.util.Calendar;
@@ -195,35 +200,10 @@ public class TimeAlarmSettingsAdapter extends BaseAdapter {
         public TimePicker timePicker;
     }
 
-    public static class RepeatHolder {
-        public TextView changingText;
-        public TextView mainText;
-    }
-
-    public static class SongHolder {
-        public TextView changingText;
-        public TextView mainText;
-    }
-
-    public static class VolumeHolder {
-        public SeekBar seekBar;
-    }
-
-    public static class PostponeHolder {
-        public TextView changingText;
-        public TextView mainText;
-        public Switch aSwitch;
-    }
-
     public static class IntelligentAlarmHolder {
         public TextView changingText;
         public TextView mainText;
         public Switch aSwitch;
-    }
-
-    public static class NameHolder {
-        public TextView mainName;
-        public EditText name;
     }
 
 }

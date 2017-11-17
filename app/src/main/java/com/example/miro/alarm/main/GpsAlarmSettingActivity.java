@@ -1,5 +1,7 @@
 package com.example.miro.alarm.main;
 
+import android.app.Activity;
+import android.app.DialogFragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
@@ -8,7 +10,10 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 
 import com.example.miro.alarm.R;
+import com.example.miro.alarm.dialog.DaysDialogFragment;
+import com.example.miro.alarm.dialog.TypeDialogFragment;
 import com.example.miro.alarm.inteligentAlarm.adapters.GpsAlarmSettingsAdapter;
+import com.example.miro.alarm.inteligentAlarm.adapters.map.MapsActivity;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.GPSAlarmSettingsImpl;
 
 import java.io.Serializable;
@@ -18,7 +23,7 @@ import java.io.Serializable;
  */
 
 public class GpsAlarmSettingActivity extends FragmentActivity implements View.OnClickListener,
-        Serializable, ListView.OnItemClickListener {
+        Serializable, ListView.OnItemClickListener, DaysDialogFragment.DaysDialogListener, TypeDialogFragment.TypesDialogListener {
 
     private GPSAlarmSettingsImpl settings;
     private GpsAlarmSettingsAdapter adapter;
@@ -37,6 +42,34 @@ public class GpsAlarmSettingActivity extends FragmentActivity implements View.On
         adapter.refresh(settings);
     }
 
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        switch (position) {
+            case 0:
+                Intent intent = new Intent(parent.getContext(), MapsActivity.class);
+                ((Activity) parent.getContext()).startActivityForResult(intent,22);
+                break;
+            case 1:
+                showDialogDays();
+                break;
+            case 2:
+                showDialogTypes();
+                break;
+        }
+
+    }
+
+    private void showDialogTypes() {
+        // Create an instance of the dialog fragment and show it
+        final DialogFragment dialog = new TypeDialogFragment(settings.getType());
+        dialog.show(getFragmentManager(), "TypesDialogFragment");
+    }
+
+    public void showDialogDays() {
+        // Create an instance of the dialog fragment and show it
+        final DialogFragment dialog = new DaysDialogFragment(settings.getRepeat());
+        dialog.show(getFragmentManager(), "DaysDialogFragment");
+    }
 
     @Override
     public void onClick(View v) {
@@ -54,9 +87,24 @@ public class GpsAlarmSettingActivity extends FragmentActivity implements View.On
         }
     }
 
+    @Override
+    public void onActivityResult(final int requestCode, final int resultCode, final Intent data) {
+        adapter.onActivityResult(requestCode, resultCode, data);
+    }
 
     @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+    public void onDialogPositiveClick(DialogFragment dialog) {
+        if (dialog instanceof DaysDialogFragment) {
+            settings.setRepeat(((DaysDialogFragment) dialog).getRepeat());
+            adapter.refresh(settings);
+        } else if (dialog instanceof TypeDialogFragment) {
+            settings.setType(((TypeDialogFragment) dialog).getType());
+            adapter.refresh(settings);
+        }
+    }
+
+    @Override
+    public void onDialogNegativeClick(DialogFragment dialog) {
 
     }
 }

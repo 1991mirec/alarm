@@ -8,6 +8,7 @@ import android.widget.TextView;
 
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.adapters.TimeAlarmSettingsAdapter;
+import com.example.miro.alarm.inteligentAlarm.adapters.holders.SongHolder;
 
 import java.io.Serializable;
 
@@ -27,7 +28,7 @@ public class SongImpl implements Serializable {
         return name;
     }
 
-    public View setVisual(final LayoutInflater inflater, final ViewGroup parent, final TimeAlarmSettingsAdapter.SongHolder songHolder) {
+    public View setVisual(final LayoutInflater inflater, final ViewGroup parent, final SongHolder songHolder) {
         View row = inflater.inflate(R.layout.two_text_fields, parent, false);
         songHolder.changingText = (TextView) row.findViewById(R.id.changingTxtView_twoFields);
         songHolder.mainText = (TextView) row.findViewById(R.id.mainTxtView_twoFields);
@@ -36,7 +37,7 @@ public class SongImpl implements Serializable {
         return row;
     }
 
-    public void set(final TimeAlarmSettingsAdapter.SongHolder songHolder, final Context context) {
+    public void set(final SongHolder songHolder, final Context context) {
         songHolder.changingText.setText(name);
         songHolder.mainText.setText(context.getText(R.string.alarm_tone));
     }

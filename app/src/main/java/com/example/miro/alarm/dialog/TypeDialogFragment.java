@@ -39,10 +39,11 @@ public class TypeDialogFragment extends DialogFragment {
         // mSelectedItems = new ArrayList();  // Where we track the selected items
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         // Set the dialog title
+        CharSequence cs[] = {"Sound", "Vibration", "Sound and Vibration"};
         builder.setTitle("Title")
                 // Specify the list array, the items to be selected by default (null for none),
                 // and the listener through which to receive callbacks when items are selected
-                .setSingleChoiceItems(R.array.types, type.getType().ordinal(),
+                .setSingleChoiceItems(cs, type.getType().ordinal(),
                         new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {

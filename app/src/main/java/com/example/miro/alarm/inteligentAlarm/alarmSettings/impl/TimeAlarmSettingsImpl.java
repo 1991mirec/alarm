@@ -56,7 +56,6 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
             isOn = false;
             imgAlarm.setImageResource(R.mipmap.alarm_black);
             if (pendingIntent[ids] != null && manager[ids] != null) {
-                System.out.println("cacnle" + ids);
                 manager[ids].cancel(pendingIntent[ids]);
             }
         } else {

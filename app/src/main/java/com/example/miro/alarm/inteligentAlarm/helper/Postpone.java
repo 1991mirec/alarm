@@ -10,6 +10,7 @@ import android.widget.TextView;
 
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.adapters.TimeAlarmSettingsAdapter;
+import com.example.miro.alarm.inteligentAlarm.adapters.holders.PostponeHolder;
 
 import java.io.Serializable;
 
@@ -41,7 +42,7 @@ public class Postpone extends SwitchOnOff implements Serializable {
         isTurnedOn = isChecked;
     }
 
-    public View setVisual(final LayoutInflater inflater, final ViewGroup parent, final TimeAlarmSettingsAdapter.PostponeHolder postponeHolder) {
+    public View setVisual(final LayoutInflater inflater, final ViewGroup parent, final PostponeHolder postponeHolder) {
         final View row = inflater.inflate(R.layout.two_text_fields_and_switch, parent, false);
         final Context context = inflater.getContext();
         postponeHolder.mainText = (TextView) row.findViewById(R.id.maintxtViewSwitch);
@@ -58,7 +59,7 @@ public class Postpone extends SwitchOnOff implements Serializable {
         return row;
     }
 
-    public void set(final TimeAlarmSettingsAdapter.PostponeHolder postponeHolder, final Context context) {
+    public void set(final PostponeHolder postponeHolder, final Context context) {
         final String times = context.getString(R.string.times);
 
         final String minutesString = Utils.getMinutes(minutes, context);

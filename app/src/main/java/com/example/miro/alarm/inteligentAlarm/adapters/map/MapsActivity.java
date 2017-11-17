@@ -1,30 +1,115 @@
 package com.example.miro.alarm.inteligentAlarm.adapters.map;
 
+import android.Manifest;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
+import android.view.KeyEvent;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.Spinner;
+import android.widget.TextView;
 
 import com.example.miro.alarm.R;
+import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
+        View.OnClickListener {
 
     private GoogleMap mMap;
+    private Marker marker;
+    private String lengthType;
+    private Circle circle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+        final SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        final TextView textRadius = (TextView) findViewById(R.id.mapEditText);
+        findViewById(R.id.mapButtonOK).setOnClickListener(this);
+        findViewById(R.id.mapButtonCancel).setOnClickListener(this);
+
+
+        textRadius.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (null != marker) {
+                    setCircle(marker.getPosition());
+                }
+                return true;
+
+            }
+        });
+        final Spinner lengthTypeSpinner = (Spinner) findViewById(R.id.mapSpinner);
+        String[] items = new String[]{"km", "m"};
+        // Create an ArrayAdapter using the string array and a default spinner layout
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_dropdown_item, items);
+
+        // Specify the layout to use when the list of choices appears
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        // Apply the adapter to the spinner
+        lengthTypeSpinner.setAdapter(adapter);
+        lengthTypeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                lengthType = parent.getItemAtPosition(position).toString();
+                if (null != marker) {
+                    setCircle(marker.getPosition());
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                parent.setSelection(0);
+            }
+        });
     }
 
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.mapButtonCancel:
+                setResult(RESULT_CANCELED);
+                super.finish();
+                break;
+            case R.id.mapButtonOK:
+                if (null == marker) {
+                    setResult(RESULT_CANCELED);
+                } else {
+                    Intent output = new Intent();
+                    final TextView textRadius = (TextView) findViewById(R.id.mapEditText);
+                    int radius = Integer.parseInt(textRadius.getText().toString());
+                    output.putExtra("radius", getRadiusInMeters());
+                    output.putExtra("latitude", marker.getPosition().latitude);
+                    output.putExtra("longitude", marker.getPosition().longitude);
+                    setResult(RESULT_OK, output);
+                }
+                super.finish();
+                break;
+        }
+    }
 
     /**
      * Manipulates the map once available.
@@ -39,9 +124,71 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions();
+            return;
+        }
+        mMap.setMyLocationEnabled(true);
+        final FusedLocationProviderClient f = new FusedLocationProviderClient(this);
+
+        f.getLastLocation().addOnCompleteListener(new OnCompleteListener<Location>() {
+            @Override
+            public void onComplete(@NonNull Task<Location> task) {
+                double lat = task.getResult().getLatitude();
+                double ltd = task.getResult().getLongitude();
+                final LatLng latLng = new LatLng(lat, ltd);
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+            }
+        });
+
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(-34, 151)));
+        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng latLng) {
+                setButton(latLng);
+            }
+        });
     }
+
+    private void setButton(final LatLng latLng) {
+        if (marker != null) {
+            marker.remove();
+        }
+
+        marker = mMap.addMarker(new MarkerOptions().position(latLng));
+        setCircle(latLng);
+    }
+
+    private void setCircle(final LatLng latLng) {
+        if (null != circle) {
+            circle.remove();
+        }
+        circle = mMap.addCircle(new CircleOptions()
+                    .center(latLng)
+                    .radius(getRadiusInMeters())
+                    .strokeWidth(0.5f)
+                    .fillColor(0x550000FF));
+    }
+
+    private int getRadiusInMeters() {
+        final TextView textRadius = (TextView) findViewById(R.id.mapEditText);
+        int radius = Integer.parseInt(textRadius.getText().toString());
+        if ("km".equals(lengthType)) {
+            return radius * 1000;
+        }
+
+        return radius;
+    }
+
+    private void requestPermissions() {
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                0);
+    }
+
+    public LatLng getLatLng() {
+        return marker.getPosition();
+    }
+
 }

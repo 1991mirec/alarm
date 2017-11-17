@@ -9,6 +9,7 @@ import android.widget.TextView;
 
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.adapters.TimeAlarmSettingsAdapter;
+import com.example.miro.alarm.inteligentAlarm.adapters.holders.RepeatHolder;
 
 import java.io.Serializable;
 
@@ -143,7 +144,7 @@ public class Repeat implements Serializable {
         return repeat;
     }
 
-    public View setVisual(final LayoutInflater inflater, final ViewGroup parent, final TimeAlarmSettingsAdapter.RepeatHolder holder) {
+    public View setVisual(final LayoutInflater inflater, final ViewGroup parent, final RepeatHolder holder) {
         context = inflater.getContext();
         final View row = inflater.inflate(R.layout.two_text_fields, parent, false);
         holder.changingText = (TextView) row.findViewById(R.id.changingTxtView_twoFields);
@@ -154,7 +155,7 @@ public class Repeat implements Serializable {
         return row;
     }
 
-    public void set(final TimeAlarmSettingsAdapter.RepeatHolder holder, final Context contextLocal) {
+    public void set(final RepeatHolder holder, final Context contextLocal) {
         context =contextLocal;
         holder.mainText.setText(context.getResources().getText(R.string.repeat));
         holder.changingText.setText(toString());
