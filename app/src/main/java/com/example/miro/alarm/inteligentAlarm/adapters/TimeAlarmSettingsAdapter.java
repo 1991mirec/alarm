@@ -1,12 +1,15 @@
 package com.example.miro.alarm.inteligentAlarm.adapters;
 
 import android.content.Context;
+import android.os.Build;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.SeekBar;
 import android.widget.Switch;
@@ -59,13 +62,20 @@ public class TimeAlarmSettingsAdapter extends BaseAdapter {
         if (convertView == null) {
             switch (position) {
                 case 0:
-                    settings.getTime().setTimeInMillis(Calendar.getInstance().getTimeInMillis());
                     final TimePickerHolder timePickerHolder = new TimePickerHolder();
                     convertView = inflater.inflate(R.layout.time, parent, false);
 
                     timePickerHolder.timePicker = (TimePicker) convertView.findViewById(R.id.timePicker);
                     timePickerHolder.timePicker.setCurrentHour(settings.getTime().get(Calendar.HOUR_OF_DAY));
                     timePickerHolder.timePicker.setCurrentMinute(settings.getTime().get(Calendar.MINUTE));
+
+                    timePickerHolder.timePicker.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            settings.getTime();
+                        }
+                    });
+
                     timePickerHolder.timePicker.setOnTimeChangedListener(new TimePicker.OnTimeChangedListener() {
                         @Override
                         public void onTimeChanged(TimePicker view, int hourOfDay, int minute) {
@@ -73,6 +83,39 @@ public class TimeAlarmSettingsAdapter extends BaseAdapter {
                             settings.getTime().set(Calendar.MINUTE, minute);
                         }
                     });
+                    //Becuase google time picker setOnTimeChangedListener not working for am pm change
+                    final TimePicker tp = timePickerHolder.timePicker;
+                    final ViewGroup amPmView;
+                    final ViewGroup v1 = (ViewGroup) tp.getChildAt(0);
+                    final ViewGroup v2 = (ViewGroup) v1.getChildAt(0);
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                        ViewGroup v3 = (ViewGroup) v2.getChildAt(0);
+                        amPmView = (ViewGroup) v3.getChildAt(3);
+                    } else {
+                        amPmView = (ViewGroup) v2.getChildAt(3);
+                    }
+                    amPmView.getChildAt(0).setOnTouchListener(new View.OnTouchListener() {
+                        @Override
+                        public boolean onTouch(View v, MotionEvent event) {
+                            final int houre = settings.getTime().get(Calendar.HOUR_OF_DAY);
+                            if (houre >= 12) {
+                                settings.getTime().set(Calendar.HOUR_OF_DAY, houre - 12);
+                            }
+                            return false;
+                        }
+                    });
+
+                    amPmView.getChildAt(1).setOnTouchListener(new View.OnTouchListener() {
+                        @Override
+                        public boolean onTouch(View v, MotionEvent event) {
+                            final int houre = settings.getTime().get(Calendar.HOUR_OF_DAY);
+                            if (houre < 12) {
+                                settings.getTime().set(Calendar.HOUR_OF_DAY, houre + 12);
+                            }
+                            return false;
+                        }
+                    });
+
                     convertView.setTag(timePickerHolder);
                     break;
                 case 1:
