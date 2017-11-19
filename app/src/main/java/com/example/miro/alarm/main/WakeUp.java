@@ -11,6 +11,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import com.example.miro.alarm.R;
+import com.example.miro.alarm.inteligentAlarm.helper.Repeat;
 import com.example.miro.alarm.tabFragments.AlarmFragment;
 
 import java.util.Timer;
@@ -36,9 +37,10 @@ public class WakeUp extends FragmentActivity {
         setContentView(R.layout.wakeup);
         final Intent intent = getIntent();
         final String name = intent.getExtras().getString("name");
-        final int ids = intent.getExtras().getInt("vol");
-        System.out.println("ids   " +ids);
         final String isNormal = intent.getExtras().getString("isNormal");
+        final Repeat repeatDays = (Repeat) intent.getSerializableExtra("RepeatDays");
+        final int houre = intent.getIntExtra("houre", 0);
+        final int minute = intent.getIntExtra("minute", 0);
         if ("normal".contentEquals(isNormal)) {
             volume = intent.getExtras().getInt("volume");
         } else {
@@ -50,9 +52,9 @@ public class WakeUp extends FragmentActivity {
             @Override
             public void onClick(View v) {
                 if ("normal".contentEquals(isNormal)) {
-                    AlarmFragment.cancel(id, ids);
+                    AlarmFragment.cancel(id, repeatDays, houre, minute, true);
                 } else {
-                    AlarmFragment.cancelInteligent(id, ids);
+                    AlarmFragment.cancel(id, repeatDays, houre, minute, false);
                 }
                 scheduleTimer.cancel();
                 mediaPlayer.stop();

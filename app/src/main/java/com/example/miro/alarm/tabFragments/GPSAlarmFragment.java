@@ -44,7 +44,7 @@ public class GPSAlarmFragment extends PlaceholderFragment implements FragmentSet
     }
 
 
-    private void addButton() {
+    public void addButton() {
         final GPSAlarmSettingsImpl gpsAlarmSettings = new GPSAlarmSettingsImpl(context,
                 gpsSettings.size());
         gpsSettings.add(gpsAlarmSettings);
@@ -88,22 +88,6 @@ public class GPSAlarmFragment extends PlaceholderFragment implements FragmentSet
 
             refresh();
         }
-    }
-
-    @Override
-    public Button createButton(final String name) {return null;
-        /*final Button button = new Button(getActivity());
-        button.setLayoutParams(new Toolbar.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        button.setText(name);
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-            }
-        });
-        return button;*/
     }
 
     @Override

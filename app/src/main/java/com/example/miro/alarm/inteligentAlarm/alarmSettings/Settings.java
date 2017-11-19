@@ -57,6 +57,27 @@ public class Settings implements Serializable {
         isOn = false;
     }
 
+    protected Settings(final String name, final int volume, final int type, final boolean isOn,
+                       final String songName, final Repeat repeat, final Postpone postpone) {
+        this.volume = volume;
+        this.name = name;
+        this.song = new SongImpl(songName);
+        switch (type) {
+            case 0:
+                this.type = new TypeImpl(Type.SOUND);
+                break;
+            case 1:
+                this.type = new TypeImpl(Type.VIBRATION);
+                break;
+            case 2:
+                this.type = new TypeImpl(Type.BOTH);
+                break;
+        }
+        this.postpone = postpone;
+        this.repeat = repeat;
+        this.isOn = isOn;
+    }
+
     public boolean isOn() {
         return isOn;
     }

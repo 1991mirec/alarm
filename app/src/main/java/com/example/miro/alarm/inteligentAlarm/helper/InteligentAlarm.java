@@ -18,7 +18,8 @@ public class InteligentAlarm extends SwitchOnOff implements Serializable {
     private int timeBeforeRealAlarm;
     private SongImpl song;
 
-    public InteligentAlarm(String song, int timeBeforeRealAlarm, boolean isTurnedOn) {
+    public InteligentAlarm(final String song, final int timeBeforeRealAlarm,
+                           final boolean isTurnedOn) {
         super(isTurnedOn);
         this.song = new SongImpl(song);
         this.timeBeforeRealAlarm = timeBeforeRealAlarm;

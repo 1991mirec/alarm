@@ -55,6 +55,11 @@ public class POIAlarmFragment extends PlaceholderFragment implements FragmentSet
     }
 
     @Override
+    public void addButton() {
+
+    }
+
+
     public Button createButton(final String name) {
         final Button button = new Button(getActivity());
         button.setLayoutParams(new Toolbar.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,

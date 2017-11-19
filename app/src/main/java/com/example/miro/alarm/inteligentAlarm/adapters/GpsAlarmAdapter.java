@@ -1,5 +1,6 @@
 package com.example.miro.alarm.inteligentAlarm.adapters;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.view.LayoutInflater;
@@ -32,7 +33,7 @@ public class GpsAlarmAdapter extends ArrayAdapter<GPSAlarmSettingsImpl>{
     @Override
     public View getView(final int position, View convertView, ViewGroup parent) {
         final LayoutInflater inflater = LayoutInflater.from(context);
-        final View view = inflater.inflate(resource,parent,false);
+        @SuppressLint("ViewHolder") final View view = inflater.inflate(resource,parent,false);
         data[position].setVisuals(view);
         return view;
     }

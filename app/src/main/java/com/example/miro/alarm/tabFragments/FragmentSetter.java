@@ -11,7 +11,7 @@ public interface FragmentSetter {
 
     LinearLayout initiateButtons();
 
-    Button createButton(final String name);
+    void addButton();
 
     void removeButton(int id);
 }

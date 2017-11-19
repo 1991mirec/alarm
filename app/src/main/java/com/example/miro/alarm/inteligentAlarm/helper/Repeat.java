@@ -56,6 +56,9 @@ public class Repeat implements Serializable {
     public boolean isNoDay() {
         return noDay;
     }
+    public boolean isEveryDay() {
+        return everyDay;
+    }
 
     public boolean[] getDays() {
         return new boolean[]{
@@ -69,7 +72,7 @@ public class Repeat implements Serializable {
                 };
     }
 
-    public void setDays(final int which, final boolean setter) {System.out.println("set" + which + " on  " + setter);
+    public void setDays(final int which, final boolean setter) {
         switch (which) {
             case 1:
                 monday = setter;

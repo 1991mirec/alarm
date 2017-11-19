@@ -2,8 +2,10 @@ package com.example.miro.alarm.inteligentAlarm.alarmSettings.impl;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -12,8 +14,13 @@ import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.Settings;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.api.TimeAlarmSettings;
 import com.example.miro.alarm.inteligentAlarm.helper.InteligentAlarm;
+import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
+import com.example.miro.alarm.inteligentAlarm.helper.Repeat;
 import com.example.miro.alarm.inteligentAlarm.helper.Utils;
 import com.example.miro.alarm.receiver.TimeAlarmReceiver;
+import com.example.miro.alarm.tabFragments.AlarmFragment;
+
+import org.json.JSONException;
 
 import java.io.Serializable;
 import java.util.Calendar;
@@ -28,10 +35,6 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
 
     private InteligentAlarm inteligentAlarm;
     private Calendar time;
-    private transient AlarmManager manager[] = new AlarmManager[8]; // days of week plus whole week
-    private transient AlarmManager managerInteligent[] = new AlarmManager[8];
-    private transient PendingIntent pendingIntent[] = new PendingIntent[8];
-    private transient PendingIntent pendingIntentInteligent[] = new PendingIntent[8];
     private transient Context context;
 
     private transient ImageButton imgAlarm;
@@ -39,10 +42,6 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
     public TimeAlarmSettingsImpl(final Context context, final int id) {
         super(context.getString(R.string.default_alarm));
         this.context = context;
-        for (int i = 0; i < 8; i++) {
-            this.manager[i] = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-            this.managerInteligent[i] = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        }
         final Calendar calendar = new GregorianCalendar(TimeZone.getDefault());
         final Date time = new Date();
         calendar.setTime(time);
@@ -51,36 +50,37 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
         setId(id);
     }
 
-    public void cancelAlarm(final int ids, final boolean visualOff) {System.out.println("cacnle" + ids);
-        if (ids == 0) {
-            isOn = false;
-            imgAlarm.setImageResource(R.mipmap.alarm_black);
-            if (pendingIntent[ids] != null && manager[ids] != null) {
-                manager[ids].cancel(pendingIntent[ids]);
-            }
-        } else {
-            if (pendingIntent[ids] != null && manager[ids] != null) {
-                if (visualOff) {
-                    manager[ids].cancel(pendingIntent[ids]);
-                } else {
-                    manager[ids].setExact(AlarmManager.RTC_WAKEUP, time.getTimeInMillis() - Utils.ONE_MINUTE_MILISECONDS + Utils.ONE_DAY_MILISECONDS * 7, pendingIntent[ids]);
-                }
-            }
-        }
-        System.out.println(isOn);
+    public TimeAlarmSettingsImpl(final Context context, final int id, final Calendar time,
+                                 final InteligentAlarm inteligentAlarm, final String name,
+                                 final int volume, final boolean isOn, final int type,
+                                 final String songName, final Repeat repeat,
+                                 final Postpone postpone) {
+        super(name, volume, type, isOn, songName, repeat, postpone);
+        this.context = context;
+        this.inteligentAlarm = new InteligentAlarm("loud_alarm_buzzer.mp3", 1, false);
+        setId(id);
+        this.time = time;
+        this.inteligentAlarm =inteligentAlarm;
     }
 
-    public void cancelInteligentAlarm(final int ids, final boolean visualOff) {
-        if (pendingIntentInteligent[ids] != null && managerInteligent[ids] != null) {
-            if (ids == 0) {
-                managerInteligent[ids].cancel(pendingIntentInteligent[ids]);
+    public void cancelAlarmOrRestart(final boolean resetAlarm, final long finalTime,
+                                     final boolean isNormal) {
+        Intent intent;
+        long timeBeforeRealAlarm = 0;
+        if (isNormal) {
+            intent = setUpIntent();
+        } else{
+            timeBeforeRealAlarm = inteligentAlarm.getTimeBeforeRealAlaram() * Utils.ONE_MINUTE_MILISECONDS;
+            intent = setUpInteligentIntent();
+        }
+        final PendingIntent penInt = PendingIntent.getBroadcast(context, REQ_CODE_WAKE_UP, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT);
+        final AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (am != null) {
+            if (!resetAlarm) {
+                am.cancel(penInt);
             } else {
-
-                if (visualOff) {
-                    managerInteligent[ids].cancel(pendingIntentInteligent[ids]);
-                } else {
-                    managerInteligent[ids].setExact(AlarmManager.RTC_WAKEUP, time.getTimeInMillis() - Utils.ONE_MINUTE_MILISECONDS + Utils.ONE_DAY_MILISECONDS * 7, pendingIntentInteligent[ids]);
-                }
+                am.setExact(AlarmManager.RTC_WAKEUP, finalTime - timeBeforeRealAlarm, penInt);
             }
         }
     }
@@ -109,10 +109,14 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
                 if (isOn) {
                     setAlarmManager();
                 } else {
-                    for (int i = 0; i < 8; i++) {
-                        cancelAlarm(i, true);
-                        cancelInteligentAlarm(i, true);
-                    }
+                    imgAlarm.setImageResource(R.mipmap.alarm_black);
+                    cancelAlarmOrRestart(false, 0, true);
+                    cancelAlarmOrRestart(false, 0, false);
+                }
+                try {
+                    AlarmFragment.updateAndSaveSharedPreferancesWithAlarmSettings(context);
+                } catch (JSONException e) {
+                    e.printStackTrace();
                 }
             }
         });
@@ -140,7 +144,7 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
         nameTxtView.setText(name);
     }
 
-    public void setAlarm(TimeAlarmSettingsImpl alarm) {
+    public void setAlarm(final TimeAlarmSettingsImpl alarm, final boolean isOn) {
         time = alarm.getTime();
         inteligentAlarm = alarm.getInteligentAlarm();
         volume = alarm.getVolume();
@@ -149,277 +153,230 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
         type = alarm.getType();
         postpone = alarm.getPostpone();
         repeat = alarm.repeat;
-        isOn = true;
+        this.isOn = isOn;
+    }
+
+    private Intent setUpIntent() {
+        final Intent intent = new Intent(context, TimeAlarmReceiver.class);
+        intent.putExtra("isNormal", "normal");
+        intent.putExtra("name", name);
+        intent.putExtra("volume", volume);
+        intent.putExtra("postponeonoff", postpone.isOn());
+        if (postpone.isOn()) {
+            intent.putExtra("repeat_times", postpone.getTimesOfRepeat());
+        }
+        intent.putExtra("type", type.getType());
+        intent.putExtra("nameOfSong", song.getName());
+        intent.putExtra("id", getId());
+        intent.putExtra("RepeatDays", repeat);
+        int houre = time.get(Calendar.HOUR_OF_DAY);
+        int minute = time.get(Calendar.MINUTE);
+        intent.putExtra("houre", houre);
+        intent.putExtra("minute", minute);
+        intent.setAction("intent" + id);
+        return intent;
+    }
+
+    private Intent setUpInteligentIntent() {
+        final Intent intentInteligent = new Intent(context, TimeAlarmReceiver.class);
+        intentInteligent.putExtra("isNormal", "inteligent");
+        intentInteligent.putExtra("name", name + "intel");
+        intentInteligent.putExtra("id", getId());
+        intentInteligent.putExtra("nameOfSong", inteligentAlarm.getSong().getName());
+        intentInteligent.setAction("intent_intelligent" + id);
+        return intentInteligent;
     }
 
     public void setAlarmManager() {
+        final Intent intent = setUpIntent();
+        final Intent intentInteligent = setUpInteligentIntent();
+        managerSet(getTimeInMilis(repeat, time), intent, intentInteligent);
+    }
+
+    public static long getTimeInMilis(final Repeat repeat, final Calendar time) {
+        long finalTime = 0;
         if (repeat.isNoDay()) {
             if (time.getTimeInMillis() < Calendar.getInstance().getTimeInMillis()) {
                 time.setTimeInMillis(time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS);
             }
-        }
-        final Intent intent = new Intent(context, TimeAlarmReceiver.class);
-        final Intent intentInteligent = new Intent(context, TimeAlarmReceiver.class);
-        intent.putExtra("isNormal", "normal");
-        intentInteligent.putExtra("isNormal", "inteligent");
-        intent.putExtra("name", name);
-        intentInteligent.putExtra("name", name + "intel");
-        intent.putExtra("volume", volume);
-        final boolean repeatingIsOn = postpone.isOn();
-
-        intent.putExtra("postponeonoff", repeatingIsOn);
-
-        if (repeatingIsOn) {
-            intent.putExtra("repeat_times", postpone.getTimesOfRepeat());
-        }
-        intent.putExtra("vol", 1);
-        intent.putExtra("type", type.getType());
-        intent.putExtra("nameOfSong", song.getName());
-
-        intent.putExtra("id", getId());
-        intentInteligent.putExtra("id", getId());
-
-        final boolean intelligentIsOn = inteligentAlarm.isOn();
-       /* if (repeat.isNoDay()) {
-            if (intelligentIsOn) {
-                intentInteligent.setAction("intent_intelligent" + id);
-                intentInteligent.putExtra("nameOfSong", inteligentAlarm.getSong().getName());
-                pendingIntentInteligent[0] = PendingIntent.getBroadcast(context, REQ_CODE_WAKE_UP, intentInteligent, PendingIntent.FLAG_UPDATE_CURRENT);
-                final long timeBeforeRealAlarm = inteligentAlarm.getTimeBeforeRealAlaram() * Utils.ONE_MINUTE_MILISECONDS;
-                managerInteligent[0].setExact(AlarmManager.RTC_WAKEUP, time.getTimeInMillis() - Utils.ONE_MINUTE_MILISECONDS - timeBeforeRealAlarm, pendingIntentInteligent[0]);
-
-            } else {
-                cancelInteligentAlarm(0);
-            }
-        }*/
-        intent.setAction("intent" + id);
-
-        if (repeat.isNoDay()) {
-            managerSet(repeatingIsOn, time.getTimeInMillis(), 0, intent, intelligentIsOn, intentInteligent);
+            return time.getTimeInMillis();
         } else {
             final boolean[] days = repeat.getDays();
+            long plusOneDay = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS;
             switch (time.get(Calendar.DAY_OF_WEEK)) {
-                case Calendar.SUNDAY: System.out.println("is sunday");
-                    if (days[0]) {System.out.println("is sunday set");
-                        if (time.getTimeInMillis() < Calendar.getInstance().getTimeInMillis()) {System.out.println("is higher number");
-                            time.setTimeInMillis(time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 7);
-                            managerSet(repeatingIsOn, time.getTimeInMillis(), 1, intent, intelligentIsOn, intentInteligent);
-                        } else {
-                            managerSet(repeatingIsOn, time.getTimeInMillis(), 1, intent, intelligentIsOn, intentInteligent);
-                            System.out.println("is lower number");
+                case Calendar.SUNDAY:
+                    if (days[0]) {
+                        if (time.getTimeInMillis() < Calendar.getInstance().getTimeInMillis()) {
+                            time.setTimeInMillis(plusOneDay * 7);
                         }
+                        finalTime = time.getTimeInMillis();
                     } else if (days[1]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS;
-                        managerSet(repeatingIsOn, finalTime, 2, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay;
                     } else if (days[2]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 2;
-                        managerSet(repeatingIsOn, finalTime, 3, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 2;
                     } else if (days[3]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 3;
-                        managerSet(repeatingIsOn, finalTime, 4, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 3;
                     } else if (days[4]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 4;
-                        managerSet(repeatingIsOn, finalTime, 5, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 4;
                     } else if (days[5]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 5;
-                        managerSet(repeatingIsOn, finalTime, 6, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 5;
                     } else if (days[6]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 6;
-                        managerSet(repeatingIsOn, finalTime, 7, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 6;
                     }
                     break;
                 case Calendar.MONDAY:
                     if (days[0]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 6;
-                        managerSet(repeatingIsOn, finalTime, 1, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 6;
                     } else if (days[1]) {
                         if (time.getTimeInMillis() < Calendar.getInstance().getTimeInMillis()) {
-                            time.setTimeInMillis(time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 7);
-                            managerSet(repeatingIsOn, time.getTimeInMillis(), 2, intent, intelligentIsOn, intentInteligent);
-                        } else {
-                            managerSet(repeatingIsOn, time.getTimeInMillis(), 2, intent, intelligentIsOn, intentInteligent);
+                            time.setTimeInMillis(plusOneDay * 7);
                         }
+                        finalTime = time.getTimeInMillis();
                     } else if (days[2]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS;
-                        managerSet(repeatingIsOn, finalTime, 3, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay;
                     } else if (days[3]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 2;
-                        managerSet(repeatingIsOn, finalTime, 4, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 2;
                     } else if (days[4]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 3;
-                        managerSet(repeatingIsOn, finalTime, 5, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 3;
                     } else if (days[5]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 4;
-                        managerSet(repeatingIsOn, finalTime, 6, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 4;
                     } else if (days[6]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 5;
-                        managerSet(repeatingIsOn, finalTime, 7, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 5;
                     }
                     break;
                 case Calendar.TUESDAY:
                     if (days[0]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 5;
-                        managerSet(repeatingIsOn, finalTime, 1, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 5;
                     } else if (days[1]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 6;
-                        managerSet(repeatingIsOn, finalTime, 2, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 6;
                     } else if (days[2]) {
                         if (time.getTimeInMillis() < Calendar.getInstance().getTimeInMillis()) {
-                            time.setTimeInMillis(time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 7);
-                            managerSet(repeatingIsOn, time.getTimeInMillis(), 3, intent, intelligentIsOn, intentInteligent);
-                        } else {
-                            managerSet(repeatingIsOn, time.getTimeInMillis(), 3, intent, intelligentIsOn, intentInteligent);
+                            time.setTimeInMillis(plusOneDay * 7);
                         }
+                        finalTime = time.getTimeInMillis();
                     } else if (days[3]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS;
-                        managerSet(repeatingIsOn, finalTime, 4, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay;
                     } else if (days[4]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 2;
-                        managerSet(repeatingIsOn, finalTime, 5, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 2;
                     } else if (days[5]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 3;
-                        managerSet(repeatingIsOn, finalTime, 6, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 3;
                     } else if (days[6]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 4;
-                        managerSet(repeatingIsOn, finalTime, 7, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 4;
                     }
                     break;
                 case Calendar.WEDNESDAY:
                     if (days[0]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 4;
-                        managerSet(repeatingIsOn, finalTime, 1, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 4;
                     } else if (days[1]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 5;
-                        managerSet(repeatingIsOn, finalTime, 2, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 5;
                     } else if (days[2]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 6;
-                        managerSet(repeatingIsOn, finalTime, 3, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 6;
                     } else if (days[3]) {
                         if (time.getTimeInMillis() < Calendar.getInstance().getTimeInMillis()) {
-                            time.setTimeInMillis(time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 7);
-                            managerSet(repeatingIsOn, time.getTimeInMillis(), 4, intent, intelligentIsOn, intentInteligent);
-                        } else {
-                            managerSet(repeatingIsOn, time.getTimeInMillis(), 4, intent, intelligentIsOn, intentInteligent);
+                            time.setTimeInMillis(plusOneDay * 7);
                         }
+                        finalTime = time.getTimeInMillis();
                     } else if (days[4]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS;
-                        managerSet(repeatingIsOn, finalTime, 5, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay;
                     } else if (days[5]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 2;
-                        managerSet(repeatingIsOn, finalTime, 6, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 2;
                     } else if (days[6]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 3;
-                        managerSet(repeatingIsOn, finalTime, 7, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 3;
                     }
                     break;
                 case Calendar.THURSDAY:
                     if (days[0]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 3;
-                        managerSet(repeatingIsOn, finalTime, 1, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 3;
                     } else if (days[1]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 4;
-                        managerSet(repeatingIsOn, finalTime, 2, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 4;
                     } else if (days[2]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 5;
-                        managerSet(repeatingIsOn, finalTime, 3, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 5;
                     } else if (days[3]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 6;
-                        managerSet(repeatingIsOn, finalTime, 4, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 6;
                     } else if (days[4]) {
                         if (time.getTimeInMillis() < Calendar.getInstance().getTimeInMillis()) {
-                            time.setTimeInMillis(time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 7);
-                            managerSet(repeatingIsOn, time.getTimeInMillis(), 5, intent, intelligentIsOn, intentInteligent);
-                        } else {
-                            managerSet(repeatingIsOn, time.getTimeInMillis(), 5, intent, intelligentIsOn, intentInteligent);
+                            time.setTimeInMillis(plusOneDay * 7);
                         }
+                        finalTime = time.getTimeInMillis();
                     } else if (days[5]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS;
-                        managerSet(repeatingIsOn, finalTime, 6, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay;
                     } else if (days[6]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 2;
-                        managerSet(repeatingIsOn, finalTime, 7, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 2;
                     }
                     break;
                 case Calendar.FRIDAY:
                     if (days[0]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 2;
-                        managerSet(repeatingIsOn, finalTime, 1, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 2;
                     } else if (days[1]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 3;
-                        managerSet(repeatingIsOn, finalTime, 2, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 3;
                     } else if (days[2]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 4;
-                        managerSet(repeatingIsOn, finalTime, 3, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 4;
                     } else if (days[3]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 5;
-                        managerSet(repeatingIsOn, finalTime, 4, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 5;
                     } else if (days[4]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 6;
-                        managerSet(repeatingIsOn, finalTime, 5, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 6;
                     } else if (days[5]) {
                         if (time.getTimeInMillis() < Calendar.getInstance().getTimeInMillis()) {
-                            time.setTimeInMillis(time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 7);
-                            managerSet(repeatingIsOn, time.getTimeInMillis(), 6, intent, intelligentIsOn, intentInteligent);
-                        } else {
-                            managerSet(repeatingIsOn, time.getTimeInMillis(), 6, intent, intelligentIsOn, intentInteligent);
+                            time.setTimeInMillis(plusOneDay * 7);
                         }
+                        finalTime = time.getTimeInMillis();
                     } else if (days[6]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS;
-                        managerSet(repeatingIsOn, finalTime, 7, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay;
                     }
                     break;
                 case Calendar.SATURDAY:
                     if (days[0]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS;
-                        managerSet(repeatingIsOn, finalTime, 1, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay;
                     } else if (days[1]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 2;
-                        managerSet(repeatingIsOn, finalTime, 2, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 2;
                     } else if (days[2]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 3;
-                        managerSet(repeatingIsOn, finalTime, 3, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 3;
                     } else if (days[3]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 4;
-                        managerSet(repeatingIsOn, finalTime, 4, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 4;
                     } else if (days[4]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 5;
-                        managerSet(repeatingIsOn, finalTime, 5, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 5;
                     } else if (days[5]) {
-                        long finalTime = time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 6;
-                        managerSet(repeatingIsOn, finalTime, 6, intent, intelligentIsOn, intentInteligent);
+                        finalTime = plusOneDay * 6;
                     } else if (days[6]) {
                         if (time.getTimeInMillis() < Calendar.getInstance().getTimeInMillis()) {
-                            time.setTimeInMillis(time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS * 7);
-                            managerSet(repeatingIsOn, time.getTimeInMillis(), 7, intent, intelligentIsOn, intentInteligent);
-                        } else {
-                            managerSet(repeatingIsOn, time.getTimeInMillis(), 7, intent, intelligentIsOn, intentInteligent);
+                            time.setTimeInMillis(plusOneDay * 7);
                         }
+                        finalTime = time.getTimeInMillis();
                     }
                     break;
             }
         }
+        return finalTime;
     }
 
-    private void managerSet(final boolean repeatingIsOn, final long timeInMillis, final int ids, final Intent intent, final boolean intelligentIsOn, final Intent intentInteligent) {
+    private void managerSet(final long timeInMillis, final Intent intent,
+                            final Intent intentInteligent) {
+        cancelAlarmOrRestart(false, 0, true);
+        cancelAlarmOrRestart(false, 0, false);
+        ComponentName receiver = new ComponentName(context, TimeAlarmReceiver.class);
+        PackageManager pm = context.getPackageManager();
 
-        System.out.println( ids);
-        pendingIntent[ids] = PendingIntent.getBroadcast(context, REQ_CODE_WAKE_UP, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-        if (repeatingIsOn) {
-            manager[ids].setRepeating(AlarmManager.RTC_WAKEUP, timeInMillis - Utils.ONE_MINUTE_MILISECONDS,
-                    postpone.getMinutes() * Utils.ONE_MINUTE_MILISECONDS, pendingIntent[ids]);
-        } else {
-            manager[ids].setExact(AlarmManager.RTC_WAKEUP, timeInMillis - Utils.ONE_MINUTE_MILISECONDS, pendingIntent[ids]);
+        pm.setComponentEnabledSetting(receiver,
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                PackageManager.DONT_KILL_APP);
+        final PendingIntent pendingIntent = PendingIntent.getBroadcast(context, REQ_CODE_WAKE_UP, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        final AlarmManager manager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (manager != null) {
+            if (postpone.isOn()) {
+                manager.setRepeating(AlarmManager.RTC_WAKEUP, timeInMillis,
+                        postpone.getMinutes() * Utils.ONE_MINUTE_MILISECONDS, pendingIntent);
+            } else {
+                manager.setExact(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent);
+            }
         }
 
-        if (intelligentIsOn) {
-            intentInteligent.setAction("intent_intelligent" + id);
-            intentInteligent.putExtra("nameOfSong", inteligentAlarm.getSong().getName());
-            pendingIntentInteligent[ids] = PendingIntent.getBroadcast(context, REQ_CODE_WAKE_UP, intentInteligent, PendingIntent.FLAG_UPDATE_CURRENT);
+        if (inteligentAlarm.isOn()) {
+            final PendingIntent pendingIntentInteligent = PendingIntent.getBroadcast(context, REQ_CODE_WAKE_UP, intentInteligent, PendingIntent.FLAG_UPDATE_CURRENT);
             final long timeBeforeRealAlarm = inteligentAlarm.getTimeBeforeRealAlaram() * Utils.ONE_MINUTE_MILISECONDS;
-            managerInteligent[ids].setExact(AlarmManager.RTC_WAKEUP, time.getTimeInMillis() - Utils.ONE_MINUTE_MILISECONDS - timeBeforeRealAlarm, pendingIntentInteligent[ids]);
-
-        } else {
-            cancelInteligentAlarm(ids, true);
+            final AlarmManager managerInteligent = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            if (managerInteligent != null) {
+                managerInteligent.setExact(AlarmManager.RTC_WAKEUP, time.getTimeInMillis() - timeBeforeRealAlarm, pendingIntentInteligent);
+            }
         }
     }
 
