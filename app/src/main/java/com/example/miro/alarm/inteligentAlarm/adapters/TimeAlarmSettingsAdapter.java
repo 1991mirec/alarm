@@ -69,13 +69,6 @@ public class TimeAlarmSettingsAdapter extends BaseAdapter {
                     timePickerHolder.timePicker.setCurrentHour(settings.getTime().get(Calendar.HOUR_OF_DAY));
                     timePickerHolder.timePicker.setCurrentMinute(settings.getTime().get(Calendar.MINUTE));
 
-                    timePickerHolder.timePicker.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            settings.getTime();
-                        }
-                    });
-
                     timePickerHolder.timePicker.setOnTimeChangedListener(new TimePicker.OnTimeChangedListener() {
                         @Override
                         public void onTimeChanged(TimePicker view, int hourOfDay, int minute) {
