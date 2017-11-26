@@ -109,7 +109,6 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
                 if (isOn) {
                     setAlarmManager();
                 } else {
-                    imgAlarm.setImageResource(R.mipmap.alarm_black);
                     cancelAlarmOrRestart(false, 0, true);
                     cancelAlarmOrRestart(false, 0, false);
                 }

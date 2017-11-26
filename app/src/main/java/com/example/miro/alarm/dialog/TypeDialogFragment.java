@@ -1,5 +1,6 @@
 package com.example.miro.alarm.dialog;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
@@ -14,6 +15,7 @@ import com.example.miro.alarm.inteligentAlarm.helper.TypeImpl;
  * Created by Miro on 11/27/2016.
  */
 
+@SuppressLint("ValidFragment")
 public class TypeDialogFragment extends DialogFragment {
 
     private TypesDialogListener listener;

@@ -1,6 +1,9 @@
 package com.example.miro.alarm.inteligentAlarm.helper;
 
+import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
+import android.support.v4.app.ActivityCompat;
 
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.enums.Type;
@@ -34,5 +37,9 @@ public class Utils {
         } else {
             return context.getString(R.string.minutes);
         }
+    }
+    public static void requestAccessFinePermissions(final Activity activity) {
+        ActivityCompat.requestPermissions(activity,
+                new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 0);
     }
 }

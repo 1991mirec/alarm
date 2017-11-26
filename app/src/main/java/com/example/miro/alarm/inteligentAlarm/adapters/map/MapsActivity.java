@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
@@ -17,6 +18,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.example.miro.alarm.R;
+import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.GPSAlarmSettingsImpl;
+import com.example.miro.alarm.inteligentAlarm.helper.Utils;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -35,8 +38,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
     private Marker marker;
-    private String lengthType;
+    private String lengthType = "km";
     private Circle circle;
+    private GPSAlarmSettingsImpl settings;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +50,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         final SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        final Intent intent = getIntent();
+        settings = (GPSAlarmSettingsImpl) intent.getExtras().get("setting");
         final TextView textRadius = (TextView) findViewById(R.id.mapEditText);
         findViewById(R.id.mapButtonOK).setOnClickListener(this);
         findViewById(R.id.mapButtonCancel).setOnClickListener(this);
@@ -99,8 +105,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     setResult(RESULT_CANCELED);
                 } else {
                     Intent output = new Intent();
-                    final TextView textRadius = (TextView) findViewById(R.id.mapEditText);
-                    int radius = Integer.parseInt(textRadius.getText().toString());
                     output.putExtra("radius", getRadiusInMeters());
                     output.putExtra("latitude", marker.getPosition().latitude);
                     output.putExtra("longitude", marker.getPosition().longitude);
@@ -126,7 +130,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions();
+            Utils.requestAccessFinePermissions(this);
             return;
         }
         mMap.setMyLocationEnabled(true);
@@ -149,6 +153,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 setButton(latLng);
             }
         });
+        final TextView textRadius = (TextView) findViewById(R.id.mapEditText);
+        textRadius.setText(String.valueOf((double) settings.getRadius() / 1000));
+        setButton(settings.getCoordinates());
     }
 
     private void setButton(final LatLng latLng) {
@@ -173,18 +180,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private int getRadiusInMeters() {
         final TextView textRadius = (TextView) findViewById(R.id.mapEditText);
-        int radius = Integer.parseInt(textRadius.getText().toString());
+        int radius = (int) Double.parseDouble(textRadius.getText().toString());
         if ("km".equals(lengthType)) {
             return radius * 1000;
         }
 
         return radius;
-    }
-
-    private void requestPermissions() {
-        ActivityCompat.requestPermissions(this,
-                new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                0);
     }
 
     public LatLng getLatLng() {

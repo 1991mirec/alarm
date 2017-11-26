@@ -12,8 +12,10 @@ import android.widget.ListView;
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.dialog.DaysDialogFragment;
 import com.example.miro.alarm.dialog.TypeDialogFragment;
+import com.example.miro.alarm.inteligentAlarm.adapters.ContactAlarmSettingsAdapter;
 import com.example.miro.alarm.inteligentAlarm.adapters.GpsAlarmSettingsAdapter;
 import com.example.miro.alarm.inteligentAlarm.adapters.map.MapsActivity;
+import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.ContactAlarmSettingsImpl;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.GPSAlarmSettingsImpl;
 
 import java.io.Serializable;
@@ -22,19 +24,19 @@ import java.io.Serializable;
  * Created by Miro on 11/23/2016.
  */
 
-public class GpsAlarmSettingActivity extends FragmentActivity implements View.OnClickListener,
+public class ContactAlarmSettingActivity extends FragmentActivity implements View.OnClickListener,
         Serializable, ListView.OnItemClickListener, DaysDialogFragment.DaysDialogListener, TypeDialogFragment.TypesDialogListener {
 
-    private GPSAlarmSettingsImpl settings;
-    private GpsAlarmSettingsAdapter adapter;
+    private ContactAlarmSettingsImpl settings;
+    private ContactAlarmSettingsAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_alarm);
         final Intent intent = getIntent();
-        settings = (GPSAlarmSettingsImpl) intent.getExtras().getSerializable("gpsSetting");
-        adapter = new GpsAlarmSettingsAdapter(settings);
+        settings = (ContactAlarmSettingsImpl) intent.getExtras().getSerializable("contactSetting");
+        adapter = new ContactAlarmSettingsAdapter(settings);
 
         final ListView listView1 = (ListView) findViewById(R.id.listView1);
         listView1.setAdapter(adapter);
@@ -46,9 +48,8 @@ public class GpsAlarmSettingActivity extends FragmentActivity implements View.On
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         switch (position) {
             case 0:
-                final Intent intent = new Intent(parent.getContext(), MapsActivity.class);
-                intent.putExtra("setting", settings);
-                ((Activity) parent.getContext()).startActivityForResult(intent, 22);
+                Intent intent = new Intent(parent.getContext(), MapsActivity.class);
+                ((Activity) parent.getContext()).startActivityForResult(intent,22);
                 break;
             case 1:
                 showDialogTypes();
@@ -72,16 +73,11 @@ public class GpsAlarmSettingActivity extends FragmentActivity implements View.On
                 break;
             case R.id.button3:
                 Intent output = new Intent();
-                output.putExtra("gpsSettings", settings);
+                output.putExtra("contactSettings", settings);
                 setResult(RESULT_OK, output);
                 super.finish();
                 break;
         }
-    }
-
-    @Override
-    public void onActivityResult(final int requestCode, final int resultCode, final Intent data) {
-        adapter.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override

@@ -29,7 +29,14 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.tabFragments.AlarmFragment;
 import com.example.miro.alarm.tabFragments.ContactAlarmFragment;
@@ -46,7 +53,7 @@ import org.json.JSONObject;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
 
     private SharedPreferences sharedPreferences;
     private String phoneNumber = null;
@@ -90,27 +97,72 @@ public class MainActivity extends AppCompatActivity {
         editor.apply();
         final boolean isFirstTime = sharedPreferences.getBoolean("FirstTimeContact", true);
         if (isFirstTime) {
-
-            String deviceId = null;
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED
                     && ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.READ_SMS,
-                                Manifest.permission.READ_PHONE_STATE}, 0);
-            }
-            TelephonyManager tMgr = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-
-            if (tMgr != null) {
-                phoneNumber = tMgr.getLine1Number();
-                deviceId = tMgr.getDeviceId();
-            }
-
-            String name = null;
-            if (null == phoneNumber || "".equals(phoneNumber)) {
-                getInfoWithoutNumber(deviceId);
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS,
+                        Manifest.permission.READ_PHONE_STATE}, 0);
             } else {
-                getInfoWithNumber(deviceId);
-            }
+                TelephonyManager tMgr = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+                String deviceId = null;
+                if (tMgr != null) {
+                    phoneNumber = tMgr.getLine1Number();
+                    deviceId = tMgr.getDeviceId();
+                }
 
+                String name = null;
+                if (null == phoneNumber || "".equals(phoneNumber)) {
+                    getInfoWithoutNumber(deviceId);
+                } else {
+                    getInfoWithNumber(deviceId);
+                }
+            }
+        }
+    }
+
+    @SuppressLint({"MissingPermission", "HardwareIds"})
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == 0) {
+            boolean sms_granted = false;
+            boolean phone_state_granted = false;
+            for (int i = 0; i < permissions.length; i++) {
+                if (Manifest.permission.READ_SMS.equals(permissions[i])) {
+                    if (grantResults[i] == 0) {
+                        sms_granted = true;
+                    }
+                } else if (Manifest.permission.READ_PHONE_STATE.equals(permissions[i])) {
+                    if (grantResults[i] == 0) {
+                        phone_state_granted = true;
+                    }
+                }
+            }
+            if (sms_granted && phone_state_granted) {
+                TelephonyManager tMgr = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+                String deviceId = null;
+                if (tMgr != null) {
+                    phoneNumber = tMgr.getLine1Number();
+                    deviceId = tMgr.getDeviceId();
+                }
+
+                String name = null;
+                if (null == phoneNumber || "".equals(phoneNumber)) {
+                    getInfoWithoutNumber(deviceId);
+                } else {
+                    getInfoWithNumber(deviceId);
+                }
+            } else {
+                Process.killProcess(Process.myPid());
+            }
+        } else if (requestCode == 2) {
+            for (int i = 0; i > permissions.length; i++) {
+                if (Manifest.permission.READ_CONTACTS.equals(permissions[i])) {
+                    if (grantResults[i] == -1) {
+
+                        //TODO report problem
+                    }
+                }
+            }
         }
     }
 
@@ -166,7 +218,7 @@ public class MainActivity extends AppCompatActivity {
                 default:
             }
             throw new RSInvalidStateException("tab position out of bounds (0-2)!" +
-                    " Current position "+ position);
+                    " Current position " + position);
         }
 
         @Override
@@ -286,7 +338,24 @@ public class MainActivity extends AppCompatActivity {
                     item.put("device-id", deviceId);
                     input.put("input", item);
                     final String message = input.toString();
-                    // TODO http request with message
+                    RequestQueue queue = Volley.newRequestQueue(getApplicationContext());
+                    String url = "http://127.0.0.1:8000/createUser";
+                    StringRequest stringRequest = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
+                        @SuppressLint("ShowToast")
+                        @Override
+                        public void onResponse(String response) {
+                            Toast.makeText(getApplicationContext(), "User created successfully",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }, new Response.ErrorListener() {
+                        @SuppressLint("ShowToast")
+                        @Override
+                        public void onErrorResponse(VolleyError error) {
+                            Toast.makeText(getApplicationContext(), "User creation failed",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    queue.add(stringRequest);
                 } catch (JSONException e) {
                     System.out.print("problem");
                 }
@@ -297,9 +366,10 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
+
     private void requestPermissions() {
         ActivityCompat.requestPermissions(this,
                 new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                0);
+                1);
     }
 }

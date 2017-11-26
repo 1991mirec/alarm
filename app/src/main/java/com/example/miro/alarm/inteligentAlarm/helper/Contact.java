@@ -2,24 +2,17 @@ package com.example.miro.alarm.inteligentAlarm.helper;
 
 import java.io.Serializable;
 
-public class Contact implements Serializable{
-
+public class Contact implements Serializable {
 
     private String name;
-
-
-    private int contactId;
-
-
+    private String phoneNumber;
     private boolean hasApp;
 
-
-    public Contact(final String name, final int contactId, final boolean hasApp) {
+    public Contact(final String name, final String phoneNumber, final boolean hasApp) {
         this.name = name;
-        this.contactId =contactId;
+        this.phoneNumber = phoneNumber;
         this.hasApp = hasApp;
     }
-
 
     public String getName() {
         // TODO implement me
@@ -27,20 +20,15 @@ public class Contact implements Serializable{
     }
 
 
-    public int getId() {
+    public String getId() {
         // TODO implement me
-        return contactId;
+        return phoneNumber;
     }
 
 
     public boolean getHasApp() {
         // TODO implement me
         return hasApp;
-    }
-
-
-    public void appInstalled() {
-        // TODO implement me
     }
 
 }

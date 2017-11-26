@@ -42,7 +42,7 @@ public class GpsAlarmSettingsAdapter extends BaseAdapter {
 
     @Override
     public int getCount() {
-        return 7;
+        return 6;
     }
 
     @Override
@@ -84,21 +84,16 @@ public class GpsAlarmSettingsAdapter extends BaseAdapter {
                     convertView.setTag(mapHolder);
                     break;
                 case 1:
-                    final RepeatHolder repeatHolder = new RepeatHolder();
-                    convertView = settings.getRepeat().setVisual(inflater, parent, repeatHolder);
-                    convertView.setTag(repeatHolder);
-                    break;
-                case 2:
                     final TypeHolder typeHolder = new TypeHolder();
                     convertView = settings.getType().setVisual(inflater, parent, typeHolder);
                     convertView.setTag(typeHolder);
                     break;
-                case 3:
+                case 2:
                     final SongHolder songHolder = new SongHolder();
                     convertView = settings.getSong().setVisual(inflater, parent, songHolder);
                     convertView.setTag(songHolder);
                     break;
-                case 4:
+                case 3:
                     final VolumeHolder volumeHolder = new VolumeHolder();
                     convertView = inflater.inflate(R.layout.seek_bar, parent, false);
                     volumeHolder.seekBar = (SeekBar) convertView.findViewById(R.id.seekBar2);
@@ -121,12 +116,12 @@ public class GpsAlarmSettingsAdapter extends BaseAdapter {
                     });
                     convertView.setTag(volumeHolder);
                     break;
-                case 5:
+                case 4:
                     final PostponeHolder postponeHolder = new PostponeHolder();
                     convertView = settings.getPostpone().setVisual(inflater, parent, postponeHolder);
                     convertView.setTag(postponeHolder);
                     break;
-                case 6:
+                case 5:
                     final NameHolder nameHolder = new NameHolder();
                     convertView = inflater.inflate(R.layout.text_field_and_text_entry, parent, false);
                     nameHolder.mainName = (TextView) convertView.findViewById(R.id.mainTxtView_oneView);
@@ -169,26 +164,22 @@ public class GpsAlarmSettingsAdapter extends BaseAdapter {
                     mapHolder.changingTextRight.setText(text);
                     break;
                 case 1:
-                    final RepeatHolder repeatHolder = (RepeatHolder) convertView.getTag();
-                    settings.getRepeat().set(repeatHolder, context);
-                    break;
-                case 2:
                     final TypeHolder typeHolder = (TypeHolder) convertView.getTag();
                     settings.getType().set(typeHolder, context);
                     break;
-                case 3:
+                case 2:
                     final SongHolder songHolder = (SongHolder) convertView.getTag();
                     settings.getSong().set(songHolder, context);
                     break;
-                case 4:
+                case 3:
                     final VolumeHolder volumeHolder = (VolumeHolder) convertView.getTag();
                     volumeHolder.seekBar.setProgress(settings.getVolume());
                     break;
-                case 5:
+                case 4:
                     final PostponeHolder postponeHolder = (PostponeHolder) convertView.getTag();
                     settings.getPostpone().set(postponeHolder, context);
                     break;
-                case 6:
+                case 5:
                     final NameHolder nameHolder = (NameHolder) convertView.getTag();
                     nameHolder.mainName.setText(context.getText(R.string.name));
                     nameHolder.name.setText(settings.getName());
@@ -205,8 +196,7 @@ public class GpsAlarmSettingsAdapter extends BaseAdapter {
         notifyDataSetChanged();
     }
 
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (resultCode == Activity.RESULT_OK) {
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {if (resultCode == Activity.RESULT_OK) {
             final double longitude = (double) data.getExtras().getSerializable("longitude");
             final double latitude = (double) data.getExtras().getSerializable("latitude");
             this.settings.setLatLng(new LatLng(latitude, longitude));
