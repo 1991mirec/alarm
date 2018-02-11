@@ -1,6 +1,5 @@
 package com.example.miro.alarm.main;
 
-import android.app.Activity;
 import android.app.DialogFragment;
 import android.content.Intent;
 import android.os.Bundle;
@@ -13,10 +12,7 @@ import com.example.miro.alarm.R;
 import com.example.miro.alarm.dialog.DaysDialogFragment;
 import com.example.miro.alarm.dialog.TypeDialogFragment;
 import com.example.miro.alarm.inteligentAlarm.adapters.ContactAlarmSettingsAdapter;
-import com.example.miro.alarm.inteligentAlarm.adapters.GpsAlarmSettingsAdapter;
-import com.example.miro.alarm.inteligentAlarm.adapters.map.MapsActivity;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.ContactAlarmSettingsImpl;
-import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.GPSAlarmSettingsImpl;
 
 import java.io.Serializable;
 
@@ -35,7 +31,7 @@ public class ContactAlarmSettingActivity extends FragmentActivity implements Vie
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_alarm);
         final Intent intent = getIntent();
-        settings = (ContactAlarmSettingsImpl) intent.getExtras().getSerializable("contactSetting");
+        settings = (ContactAlarmSettingsImpl) intent.getExtras().getSerializable("contactSettings");
         adapter = new ContactAlarmSettingsAdapter(settings);
 
         final ListView listView1 = (ListView) findViewById(R.id.listView1);
@@ -47,10 +43,6 @@ public class ContactAlarmSettingActivity extends FragmentActivity implements Vie
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         switch (position) {
-            case 0:
-                Intent intent = new Intent(parent.getContext(), MapsActivity.class);
-                ((Activity) parent.getContext()).startActivityForResult(intent,22);
-                break;
             case 1:
                 showDialogTypes();
                 break;
@@ -82,10 +74,7 @@ public class ContactAlarmSettingActivity extends FragmentActivity implements Vie
 
     @Override
     public void onDialogPositiveClick(DialogFragment dialog) {
-        if (dialog instanceof DaysDialogFragment) {
-            settings.setRepeat(((DaysDialogFragment) dialog).getRepeat());
-            adapter.refresh(settings);
-        } else if (dialog instanceof TypeDialogFragment) {
+       if (dialog instanceof TypeDialogFragment) {
             settings.setType(((TypeDialogFragment) dialog).getType());
             adapter.refresh(settings);
         }

@@ -20,7 +20,7 @@ import java.util.List;
 public class PlaceholderFragment extends Fragment {
 
     protected static final List<TimeAlarmSettingsImpl> timeSettings = new ArrayList<>();
-    protected static final List<GPSAlarmSettingsImpl> gpsSettings = new ArrayList<>();
+    public static final List<GPSAlarmSettingsImpl> gpsSettings = new ArrayList<>();
     protected static final List<POIAlarmSettingsImpl> poiSettings = new ArrayList<>();
     protected static final List<ContactAlarmSettingsImpl> contactSettings = new ArrayList<>();
 

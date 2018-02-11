@@ -25,4 +25,6 @@
     <string name="minute">minute</string>
     <string name="default_alarm">Wake up!!!</string>
     <string name="tomorow">Tomorrow</string>
+    <string name="kilometers">Kilometers</string>
+    <string name="meters">meters</string>
 </resources>

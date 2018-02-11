@@ -1,6 +1,5 @@
 package com.example.miro.alarm.main;
 
-import android.app.Activity;
 import android.app.DialogFragment;
 import android.content.Intent;
 import android.os.Bundle;
@@ -12,10 +11,7 @@ import android.widget.ListView;
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.dialog.DaysDialogFragment;
 import com.example.miro.alarm.dialog.TypeDialogFragment;
-import com.example.miro.alarm.inteligentAlarm.adapters.GpsAlarmSettingsAdapter;
 import com.example.miro.alarm.inteligentAlarm.adapters.PoiAlarmSettingsAdapter;
-import com.example.miro.alarm.inteligentAlarm.adapters.map.MapsActivity;
-import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.GPSAlarmSettingsImpl;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.POIAlarmSettingsImpl;
 
 import java.io.Serializable;
@@ -35,7 +31,7 @@ public class PoiAlarmSettingActivity extends FragmentActivity implements View.On
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_alarm);
         final Intent intent = getIntent();
-        settings = (POIAlarmSettingsImpl) intent.getExtras().getSerializable("poiSetting");
+        settings = (POIAlarmSettingsImpl) intent.getExtras().getSerializable("poiSettings");
         adapter = new PoiAlarmSettingsAdapter(settings);
 
         final ListView listView1 = (ListView) findViewById(R.id.listView1);
@@ -47,14 +43,7 @@ public class PoiAlarmSettingActivity extends FragmentActivity implements View.On
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         switch (position) {
-            case 0:
-                Intent intent = new Intent(parent.getContext(), MapsActivity.class);
-                ((Activity) parent.getContext()).startActivityForResult(intent,22);
-                break;
             case 1:
-                showDialogDays();
-                break;
-            case 2:
                 showDialogTypes();
                 break;
         }
@@ -67,11 +56,7 @@ public class PoiAlarmSettingActivity extends FragmentActivity implements View.On
         dialog.show(getFragmentManager(), "TypesDialogFragment");
     }
 
-    public void showDialogDays() {
-        // Create an instance of the dialog fragment and show it
-        final DialogFragment dialog = new DaysDialogFragment(settings.getRepeat());
-        dialog.show(getFragmentManager(), "DaysDialogFragment");
-    }
+
 
     @Override
     public void onClick(View v) {
@@ -82,6 +67,7 @@ public class PoiAlarmSettingActivity extends FragmentActivity implements View.On
                 break;
             case R.id.button3:
                 Intent output = new Intent();
+
                 output.putExtra("poiSettings", settings);
                 setResult(RESULT_OK, output);
                 super.finish();
@@ -91,10 +77,7 @@ public class PoiAlarmSettingActivity extends FragmentActivity implements View.On
 
     @Override
     public void onDialogPositiveClick(DialogFragment dialog) {
-        if (dialog instanceof DaysDialogFragment) {
-            settings.setRepeat(((DaysDialogFragment) dialog).getRepeat());
-            adapter.refresh(settings);
-        } else if (dialog instanceof TypeDialogFragment) {
+        if (dialog instanceof TypeDialogFragment) {
             settings.setType(((TypeDialogFragment) dialog).getType());
             adapter.refresh(settings);
         }

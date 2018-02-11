@@ -16,8 +16,8 @@
         android:padding="15sp"
         app:srcCompat="@mipmap/alarm_black" />
 
-    <ImageButton
-        android:id="@+id/imageButtonPOIType"
+    <ImageView
+        android:id="@+id/imagePOIType"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="10sp"
@@ -26,32 +26,21 @@
         app:srcCompat="@drawable/error" />
 
     <TextView
-        android:id="@+id/textViewType"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/imageButtonPOIType"
-        android:layout_marginStart="10sp"
-        android:text="Unknown"
-        android:textColor="@android:color/background_dark"
-        android:textSize="14sp"
-        tools:ignore="RtlSymmetry" />
-
-    <TextView
-        android:id="@+id/textViewNameGPS"
+        android:id="@+id/textViewNamePOI"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="5sp"
-        android:text="TextView"
+        android:text="Name"
         android:textSize="18sp" />
 
     <TextView
-        android:id="@+id/textViewLatLngGPS"
+        android:id="@+id/poiRadius"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/textViewNameGPS"
+        android:layout_below="@id/textViewNamePOI"
         android:layout_centerHorizontal="true"
-        android:text="TextView"
+        android:text="radius"
         android:textSize="14sp" />
 </RelativeLayout>
 

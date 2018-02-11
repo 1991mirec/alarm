@@ -72,8 +72,10 @@ public class TimeAlarmSettingsAdapter extends BaseAdapter {
                     timePickerHolder.timePicker.setOnTimeChangedListener(new TimePicker.OnTimeChangedListener() {
                         @Override
                         public void onTimeChanged(TimePicker view, int hourOfDay, int minute) {
-                            settings.getTime().set(Calendar.HOUR_OF_DAY, hourOfDay);
-                            settings.getTime().set(Calendar.MINUTE, minute);
+                            Calendar temp = Calendar.getInstance();
+                            temp.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                            temp.set(Calendar.MINUTE, minute);
+                            settings.getTime().setTimeInMillis(temp.getTimeInMillis());
                         }
                     });
                     //Becuase google time picker setOnTimeChangedListener not working for am pm change

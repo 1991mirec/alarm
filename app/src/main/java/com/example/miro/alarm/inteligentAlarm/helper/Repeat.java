@@ -29,7 +29,7 @@ public class Repeat implements Serializable {
     private boolean saturday;
     private boolean sunday;
 
-    private Context context;
+    private transient Context context;
 
     public Repeat(final Repeat repeat) {
         this.everyDay = repeat.everyDay;

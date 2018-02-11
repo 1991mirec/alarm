@@ -13,6 +13,11 @@ import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.Settings;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.api.ContactAlarmSettings;
 import com.example.miro.alarm.inteligentAlarm.helper.Contact;
+import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
+import com.example.miro.alarm.inteligentAlarm.helper.Repeat;
+import com.example.miro.alarm.tabFragments.ContactAlarmFragment;
+
+import org.json.JSONException;
 
 import java.io.Serializable;
 import java.util.Locale;
@@ -21,6 +26,8 @@ public class ContactAlarmSettingsImpl extends Settings implements ContactAlarmSe
 
     private Contact contact;
     private int radius;
+    private int color;
+    private String distanceType;
 
     private transient Context context;
     private transient ImageButton imgAlarm;
@@ -30,9 +37,21 @@ public class ContactAlarmSettingsImpl extends Settings implements ContactAlarmSe
         this.contact = contact;
         this.context = context;
         this.radius = 1000;
+        this.distanceType = context.getResources().getString(R.string.kilometers);
         setId(id);
     }
 
+    public ContactAlarmSettingsImpl(final Context context, final int id, final String name,
+                                    final int volume, final boolean isOn, final int type,
+                                    final String songName, final Postpone postpone,
+                                    final Contact contact, int radius, final String distanceType) {
+        super(name, volume, type, isOn, songName, postpone);
+        this.context = context;
+        this.radius = radius;
+        this.contact = contact;
+        this.distanceType = distanceType;
+        setId(id);
+    }
 
     public boolean sendInvitation(Contact parameter) {
         // TODO implement me
@@ -40,25 +59,38 @@ public class ContactAlarmSettingsImpl extends Settings implements ContactAlarmSe
     }
 
     public Contact getContact() {
-        // TODO implement me
         return contact;
     }
 
     public int getRadius() {
-        // TODO implement me
         return radius;
+    }
+
+    @Override
+    public void setRadius(int radius) {
+        this.radius = radius;
+    }
+
+    public boolean gotPermission() {
+        if(color == ContextCompat.getColor(context, R.color.greenBackground)){
+            return true;
+        } else {
+            Toast.makeText(context, "User did not agree on sharing location yet",
+                    Toast.LENGTH_LONG).show();
+            return false;
+        }
     }
 
     public void setVisuals(final View view) {
         final TextView distance = (TextView) view.findViewById(R.id.textViewDistanceFromContact);
         final TextView nameTxtView = (TextView) view.findViewById(R.id.textViewContactName);
         imgAlarm = (ImageButton) view.findViewById(R.id.imageButtonContact);
-        final int color = ((ColorDrawable) view.getBackground()).getColor();
+        color = ((ColorDrawable) view.getBackground()).getColor();
 
         imgAlarm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (color == ContextCompat.getColor(context, R.color.greenBackground)) {
+                if (gotPermission()) {
                     isOn ^= true;
                     setVisuals(view);
                     if (isOn) {
@@ -68,14 +100,11 @@ public class ContactAlarmSettingsImpl extends Settings implements ContactAlarmSe
                         //cancelAlarmOrRestart(false, 0, true);
                         //cancelAlarmOrRestart(false, 0, false);
                     }
-                /*try {
-                    AlarmFragment.updateAndSaveSharedPreferancesWithAlarmSettings(context);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }*/
-                } else {
-                    Toast.makeText(context, "User did not agree on sharing location yet",
-                            Toast.LENGTH_LONG).show();
+                    try {
+                        ContactAlarmFragment.updateAndSaveSharedPreferancesWithAlarmSettings(context);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         });
@@ -86,12 +115,34 @@ public class ContactAlarmSettingsImpl extends Settings implements ContactAlarmSe
             imgAlarm.setImageResource(R.mipmap.alarm_black);
         }
 
-        double num = (double) radius / 1000;
+        double num = (double) radius;
+        if (distanceType.equals(context.getResources().getString(R.string.meters))) {
+            num = (double) radius / 1000;
+        }
         final String radiusText = String.format(Locale.ENGLISH, "%.2f", num);
         final String text = radiusText + " Km";
         distance.setText(text);
         nameTxtView.setText(name);
     }
 
+    public void setAlarm(ContactAlarmSettingsImpl alarm) {
+        volume = alarm.getVolume();
+        radius = alarm.getRadius();
+        song = alarm.getSong();
+        name = alarm.getName();
+        type = alarm.getType();
+        postpone = alarm.getPostpone();
+        contact = alarm.getContact();
+        radius = alarm.getRadius();
+        isOn = true;
+    }
+
+    public void setDistanceType(final String distanceType) {
+        this.distanceType = distanceType;
+    }
+
+    public String getDistanceType() {
+        return distanceType;
+    }
 }
 

@@ -1,8 +1,10 @@
 package com.example.miro.alarm.main;
 
+import android.content.Context;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
 import android.view.KeyEvent;
@@ -11,8 +13,10 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import com.example.miro.alarm.R;
+import com.example.miro.alarm.inteligentAlarm.enums.Type;
 import com.example.miro.alarm.inteligentAlarm.helper.Repeat;
 import com.example.miro.alarm.tabFragments.AlarmFragment;
+import com.example.miro.alarm.tabFragments.GPSAlarmFragment;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -24,24 +28,25 @@ import java.util.regex.Pattern;
 
 public class WakeUp extends FragmentActivity {
 
-
-    private static int repeatTimes = 0;
     private MediaPlayer mediaPlayer;
     private int volume;
-    private Timer scheduleTimer = new Timer();
+    final private Timer scheduleTimer = new Timer();
+    final private Timer scheduleTimerVibration = new Timer();
+    Vibrator vib;
 
     @Override
     protected void onCreate(@Nullable final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.wakeup);
+        vib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         final Intent intent = getIntent();
         final String name = intent.getExtras().getString("name");
         final String isNormal = intent.getExtras().getString("isNormal");
         final Repeat repeatDays = (Repeat) intent.getSerializableExtra("RepeatDays");
         final int houre = intent.getIntExtra("houre", 0);
         final int minute = intent.getIntExtra("minute", 0);
-        if ("normal".contentEquals(isNormal)) {
+        if ("normal".contentEquals(isNormal) || "gps".contentEquals(isNormal)) {
             volume = intent.getExtras().getInt("volume");
         } else {
             volume = 10;
@@ -53,11 +58,15 @@ public class WakeUp extends FragmentActivity {
             public void onClick(View v) {
                 if ("normal".contentEquals(isNormal)) {
                     AlarmFragment.cancel(id, repeatDays, houre, minute, true);
+                } else if ("gps".contentEquals(isNormal)) {
+                    GPSAlarmFragment.cancel(id);
                 } else {
                     AlarmFragment.cancel(id, repeatDays, houre, minute, false);
                 }
                 scheduleTimer.cancel();
+                scheduleTimerVibration.cancel();
                 mediaPlayer.stop();
+                vib.cancel();
                 mediaPlayer.release();
                 WakeUp.super.finish();
             }
@@ -69,10 +78,10 @@ public class WakeUp extends FragmentActivity {
         if (repeatingIsOn) {
             timesOfRepeat = intent.getExtras().getInt("repeat_times");
         }
-        final int type = intent.getExtras().getInt("type");
+        final Type type = Type.values()[intent.getExtras().getInt("type")];
 
         final String songName = intent.getExtras().getString("nameOfSong");
-        System.out.println("wakeUp" + type + timesOfRepeat + songName);
+
         final String[] song = songName.split(Pattern.quote("."));
 
 
@@ -86,7 +95,15 @@ public class WakeUp extends FragmentActivity {
         mediaPlayer.setVolume(((float) volume / 100), ((float) volume / 100));
         mediaPlayer.setLooping(true);
 
-        mediaPlayer.start();
+
+        if (type == Type.BOTH) {
+            startVibrating();
+            mediaPlayer.start();
+        } else if (type == Type.VIBRATION) {
+            startVibrating();
+        } else {
+            mediaPlayer.start();
+        }
         if ("inteligent".contentEquals(isNormal)) {
             scheduleTimer.scheduleAtFixedRate(new TimerTask() {
                 @Override
@@ -99,11 +116,21 @@ public class WakeUp extends FragmentActivity {
 
     }
 
+    public void startVibrating(){
+        scheduleTimerVibration.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                vib.vibrate(500);
+            }
+        }, 1000, 1000);
+    }
+
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         switch (keyCode) {
             case KeyEvent.KEYCODE_BACK:
             case KeyEvent.KEYCODE_HOME:
+                vib.cancel();
                 mediaPlayer.stop();
                 break;
         }

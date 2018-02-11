@@ -31,13 +31,13 @@ import java.util.TimeZone;
 public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings, Serializable {
 
     private static final int REQ_CODE_WAKE_UP = 70;
-
+    private Repeat repeat;
 
     private InteligentAlarm inteligentAlarm;
     private Calendar time;
     private transient Context context;
-
     private transient ImageButton imgAlarm;
+
 
     public TimeAlarmSettingsImpl(final Context context, final int id) {
         super(context.getString(R.string.default_alarm));
@@ -46,6 +46,7 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
         final Date time = new Date();
         calendar.setTime(time);
         this.time = calendar;
+        this.repeat = new Repeat();
         this.inteligentAlarm = new InteligentAlarm("loud_alarm_buzzer.mp3", 1, false);
         setId(id);
     }
@@ -55,12 +56,20 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
                                  final int volume, final boolean isOn, final int type,
                                  final String songName, final Repeat repeat,
                                  final Postpone postpone) {
-        super(name, volume, type, isOn, songName, repeat, postpone);
+        super(name, volume, type, isOn, songName, postpone);
         this.context = context;
-        this.inteligentAlarm = new InteligentAlarm("loud_alarm_buzzer.mp3", 1, false);
         setId(id);
         this.time = time;
-        this.inteligentAlarm =inteligentAlarm;
+        this.repeat = repeat;
+        this.inteligentAlarm = inteligentAlarm;
+    }
+
+    public void setRepeat(final Repeat repeat) {
+        this.repeat = repeat;
+    }
+
+    public Repeat getRepeat() {
+        return repeat;
     }
 
     public void cancelAlarmOrRestart(final boolean resetAlarm, final long finalTime,
@@ -69,7 +78,7 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
         long timeBeforeRealAlarm = 0;
         if (isNormal) {
             intent = setUpIntent();
-        } else{
+        } else {
             timeBeforeRealAlarm = inteligentAlarm.getTimeBeforeRealAlaram() * Utils.ONE_MINUTE_MILISECONDS;
             intent = setUpInteligentIntent();
         }
@@ -79,8 +88,15 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
         if (am != null) {
             if (!resetAlarm) {
                 am.cancel(penInt);
+                imgAlarm.setImageResource(R.mipmap.alarm_black);
             } else {
+                this.time.setTimeInMillis(finalTime);
                 am.setExact(AlarmManager.RTC_WAKEUP, finalTime - timeBeforeRealAlarm, penInt);
+                try {
+                    AlarmFragment.updateAndSaveSharedPreferancesWithAlarmSettings(context);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -136,10 +152,20 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
             minuteString = "0" + String.valueOf(minute);
         }
         timeTxtView.setText(hourString + ":" + minuteString);
-
         repeat.setContext(context);
-        repeatTxtView.setText(repeat.toString());
+        String today_tomorow = null;
+        if (repeat.toString().equals("Tomorrow")) {
+            today_tomorow = "Today";
+            if (time.get(Calendar.DAY_OF_MONTH) != Calendar.getInstance().get(Calendar.DAY_OF_MONTH)) {
+                today_tomorow = "Tomorrow";
+            }
+        }
 
+        if (today_tomorow != null) {
+            repeatTxtView.setText(today_tomorow);
+        } else {
+            repeatTxtView.setText(repeat.toString());
+        }
         nameTxtView.setText(name);
     }
 
@@ -151,7 +177,7 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
         name = alarm.getName();
         type = alarm.getType();
         postpone = alarm.getPostpone();
-        repeat = alarm.repeat;
+        repeat = alarm.getRepeat();
         this.isOn = isOn;
     }
 
@@ -164,7 +190,7 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
         if (postpone.isOn()) {
             intent.putExtra("repeat_times", postpone.getTimesOfRepeat());
         }
-        intent.putExtra("type", type.getType());
+        intent.putExtra("type", type.getType().ordinal());
         intent.putExtra("nameOfSong", song.getName());
         intent.putExtra("id", getId());
         intent.putExtra("RepeatDays", repeat);
@@ -195,7 +221,8 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
     public static long getTimeInMilis(final Repeat repeat, final Calendar time) {
         long finalTime = 0;
         if (repeat.isNoDay()) {
-            if (time.getTimeInMillis() < Calendar.getInstance().getTimeInMillis()) {
+            final long currentTime = Calendar.getInstance().getTimeInMillis();
+            if (time.getTimeInMillis() <= currentTime) {
                 time.setTimeInMillis(time.getTimeInMillis() + Utils.ONE_DAY_MILISECONDS);
             }
             return time.getTimeInMillis();
@@ -352,8 +379,10 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
                             final Intent intentInteligent) {
         cancelAlarmOrRestart(false, 0, true);
         cancelAlarmOrRestart(false, 0, false);
-        ComponentName receiver = new ComponentName(context, TimeAlarmReceiver.class);
-        PackageManager pm = context.getPackageManager();
+        final ComponentName receiver = new ComponentName(context, TimeAlarmReceiver.class);
+        final PackageManager pm = context.getPackageManager();
+        Calendar a = Calendar.getInstance();
+        a.setTimeInMillis(timeInMillis);
 
         pm.setComponentEnabledSetting(receiver,
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED,

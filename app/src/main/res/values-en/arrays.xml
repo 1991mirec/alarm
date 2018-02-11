@@ -14,4 +14,8 @@
         <item>Vibration</item>
         <item>Sound and Vibration</item>
     </string-array>
+    <string-array name="distance" >
+        <item>Kilometers</item>
+        <item>Meters</item>
+    </string-array>
 </resources>

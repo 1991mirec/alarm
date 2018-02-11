@@ -40,6 +40,6 @@ public class Utils {
     }
     public static void requestAccessFinePermissions(final Activity activity) {
         ActivityCompat.requestPermissions(activity,
-                new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 0);
+                new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 4);
     }
 }

@@ -81,12 +81,11 @@ public class AlarmFragment extends PlaceholderFragment implements FragmentSetter
 
         final TimeAlarmAdapter adapter = new TimeAlarmAdapter(context, R.layout.alarm_buttons,
                 timeSettings.toArray(new TimeAlarmSettingsImpl[timeSettings.size()]));
-
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Intent intent = new Intent(getActivity(), TimeAlarmSettingActivity.class);
-                intent.putExtra("timeSetting", timeSettings.get(position));
+                intent.putExtra("timeSettings", timeSettings.get(position));
                 startActivityForResult(intent, REQ_CODE);
             }
         });
@@ -131,19 +130,20 @@ public class AlarmFragment extends PlaceholderFragment implements FragmentSetter
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        FragmentTransaction ft = getFragmentManager().beginTransaction();
+        final FragmentTransaction ft = getFragmentManager().beginTransaction();
         ft.detach(this).attach(this).commit();
     }
 
     public static void cancel(final int id, final Repeat repeatDays, final int houre,
                               final int minute, final boolean isNormal) {
-        Calendar time = Calendar.getInstance();
+        final Calendar time = Calendar.getInstance();
         time.set(Calendar.HOUR_OF_DAY, houre);
         time.set(Calendar.MINUTE, minute);
         final long finalTime = TimeAlarmSettingsImpl.getTimeInMilis(repeatDays, time);
         if (timeSettings.get(id) != null) {
             timeSettings.get(id).cancelAlarmOrRestart(true, finalTime, isNormal);
         }
+
     }
 
     public static void updateAndSaveSharedPreferancesWithAlarmSettings(final Context context)
@@ -189,7 +189,7 @@ public class AlarmFragment extends PlaceholderFragment implements FragmentSetter
 
     private void loadSharedPreferancesWithAlarmSettings() throws JSONException {
         final SharedPreferences sharedPreferences = getContext().getApplicationContext()
-                .getSharedPreferences(PREFS_NAME, context.MODE_PRIVATE);
+                .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         final String main = sharedPreferences.getString("timeSettings", null);
         if (main != null) {
             final JSONObject mainObject = new JSONObject(main);
@@ -228,7 +228,7 @@ public class AlarmFragment extends PlaceholderFragment implements FragmentSetter
                 final Calendar calTime = Calendar.getInstance();
                 calTime.setTimeInMillis(time);
                 final TimeAlarmSettingsImpl timeSettingsReturned =
-                        new TimeAlarmSettingsImpl(getContext(), i, calTime, inteligentAlarm,
+                        new TimeAlarmSettingsImpl(context, i, calTime, inteligentAlarm,
                                 name, volume, isOn, type, songName, repeatObj, postponeObj);
                 timeSettings.add(timeSettingsReturned);
             }

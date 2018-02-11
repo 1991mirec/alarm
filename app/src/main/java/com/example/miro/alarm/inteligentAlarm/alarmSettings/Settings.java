@@ -18,13 +18,8 @@ public class Settings implements Serializable {
     protected String name;
     protected TypeImpl type;
     protected Postpone postpone;
-    protected Repeat repeat;
     protected boolean isOn;
     protected int id;
-
-    public void setRepeat(final Repeat repeat) {
-        this.repeat = repeat;
-    }
 
     public void setType(final TypeImpl type) {
         this.type = type;
@@ -35,7 +30,7 @@ public class Settings implements Serializable {
     }
 
     protected Settings(final int volume, final String song, final String name, final Type type,
-                       final Postpone postpone, final boolean isOn, final Repeat repeat) {
+                       final Postpone postpone, final boolean isOn) {
         super();
         this.isOn = isOn;
         this.volume = volume;
@@ -43,8 +38,6 @@ public class Settings implements Serializable {
         this.name = name;
         this.type = new TypeImpl(type);
         this.postpone = postpone;
-        this.repeat = repeat;
-
     }
 
     protected Settings(final String name) {
@@ -53,12 +46,12 @@ public class Settings implements Serializable {
         song = new SongImpl("loud_alarm_buzzer.mp3");
         type = new TypeImpl(Type.BOTH);
         postpone = new Postpone(1, 1, false);
-        repeat = new Repeat();
+
         isOn = false;
     }
 
     protected Settings(final String name, final int volume, final int type, final boolean isOn,
-                       final String songName, final Repeat repeat, final Postpone postpone) {
+                       final String songName, final Postpone postpone) {
         this.volume = volume;
         this.name = name;
         this.song = new SongImpl(songName);
@@ -74,7 +67,7 @@ public class Settings implements Serializable {
                 break;
         }
         this.postpone = postpone;
-        this.repeat = repeat;
+
         this.isOn = isOn;
     }
 
@@ -85,10 +78,6 @@ public class Settings implements Serializable {
     public int getVolume() {
         // TODO implement me
         return volume;
-    }
-
-    public Repeat getRepeat() {
-        return repeat;
     }
 
     public SongImpl getSong() {

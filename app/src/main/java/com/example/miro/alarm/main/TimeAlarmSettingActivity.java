@@ -31,7 +31,7 @@ public class TimeAlarmSettingActivity extends FragmentActivity implements View.O
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_alarm);
         final Intent intent = getIntent();
-        settings = (TimeAlarmSettingsImpl) intent.getExtras().getSerializable("timeSetting");
+        settings = (TimeAlarmSettingsImpl) intent.getExtras().getSerializable("timeSettings");
         adapter = new TimeAlarmSettingsAdapter(settings);
 
         final ListView listView1 = (ListView) findViewById(R.id.listView1);

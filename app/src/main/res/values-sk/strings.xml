@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="repeat">Opakovať</string>
+    <string name="kilometers">Kilometre</string>
+    <string name="meters">Metre</string>
 </resources>

@@ -4,5 +4,7 @@ public interface Radius {
 
     int getRadius();
 
+    void setRadius(final int radius);
+
 }
 

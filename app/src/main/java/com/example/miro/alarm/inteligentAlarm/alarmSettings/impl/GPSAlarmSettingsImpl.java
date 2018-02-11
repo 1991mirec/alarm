@@ -9,9 +9,17 @@ import android.widget.TextView;
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.Settings;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.api.GPSAlarmSettings;
+import com.example.miro.alarm.inteligentAlarm.helper.InteligentAlarm;
+import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
+import com.example.miro.alarm.inteligentAlarm.helper.Repeat;
+import com.example.miro.alarm.tabFragments.AlarmFragment;
+import com.example.miro.alarm.tabFragments.GPSAlarmFragment;
 import com.google.android.gms.maps.model.LatLng;
 
+import org.json.JSONException;
+
 import java.io.Serializable;
+import java.util.Calendar;
 import java.util.Locale;
 
 public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, Serializable {
@@ -19,7 +27,6 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
     private int radius;
     private double latitude;
     private double longitude;
-    private boolean isMeters;
 
     private transient Context context;
 
@@ -31,7 +38,19 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
         this.latitude = 45;
         this.longitude = 45;
         this.radius = 1000;
-        this.isMeters = false;
+        setId(id);
+    }
+
+    public GPSAlarmSettingsImpl(final Context context, final int id, final String name,
+                                final int volume, final boolean isOn, final int type,
+                                final String songName, final Postpone postpone, int radius,
+                                double latitude,
+                                double longitude) {
+        super(name, volume, type, isOn, songName, postpone);
+        this.context = context;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.radius = radius;
         setId(id);
     }
 
@@ -46,18 +65,12 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
             public void onClick(View v) {
                 isOn ^= true;
                 setVisuals(view);
-                if (isOn) {
-                    //setAlarmManager();
-                } else {
-                    imgAlarm.setImageResource(R.mipmap.alarm_black);
-                    //cancelAlarmOrRestart(false, 0, true);
-                    //cancelAlarmOrRestart(false, 0, false);
-                }
-                /*try {
-                    AlarmFragment.updateAndSaveSharedPreferancesWithAlarmSettings(context);
+
+                try {
+                    GPSAlarmFragment.updateAndSaveSharedPreferancesWithAlarmSettings(context);
                 } catch (JSONException e) {
                     e.printStackTrace();
-                }*/
+                }
             }
         });
 
@@ -92,6 +105,7 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
         name = alarm.getName();
         type = alarm.getType();
         postpone = alarm.getPostpone();
+        setLatLng(alarm.getCoordinates());
         isOn = true;
     }
 
@@ -102,6 +116,16 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
 
     public void setRadius(final int radius) {
         this.radius = radius;
+    }
+
+    public void cancel() {
+        isOn = false;
+        imgAlarm.setImageResource(R.mipmap.alarm_black);
+        try {
+            GPSAlarmFragment.updateAndSaveSharedPreferancesWithAlarmSettings(context);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 }
 

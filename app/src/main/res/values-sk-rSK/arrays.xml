@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="days" >
+        <item>Nedela</item>
+        <item>Pondelok</item>
+        <item>Utorok</item>
+        <item>Streda</item>
+        <item>Stvrtok</item>
+        <item>Piatok</item>
+        <item>Sobota</item>
+    </string-array>
+    <string-array name="types" >
+        <item>Zvuk</item>
+        <item>Vibracie</item>
+        <item>Zvuk a Vibracie</item>
+    </string-array>
+    <string-array name="distance" >
+        <item>Kilometre</item>
+        <item>Metre</item>
+    </string-array>
+</resources>

@@ -33,7 +33,7 @@ public class GpsAlarmSettingActivity extends FragmentActivity implements View.On
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_alarm);
         final Intent intent = getIntent();
-        settings = (GPSAlarmSettingsImpl) intent.getExtras().getSerializable("gpsSetting");
+        settings = (GPSAlarmSettingsImpl) intent.getExtras().getSerializable("gpsSettings");
         adapter = new GpsAlarmSettingsAdapter(settings);
 
         final ListView listView1 = (ListView) findViewById(R.id.listView1);
@@ -86,10 +86,7 @@ public class GpsAlarmSettingActivity extends FragmentActivity implements View.On
 
     @Override
     public void onDialogPositiveClick(DialogFragment dialog) {
-        if (dialog instanceof DaysDialogFragment) {
-            settings.setRepeat(((DaysDialogFragment) dialog).getRepeat());
-            adapter.refresh(settings);
-        } else if (dialog instanceof TypeDialogFragment) {
+        if (dialog instanceof TypeDialogFragment) {
             settings.setType(((TypeDialogFragment) dialog).getType());
             adapter.refresh(settings);
         }
