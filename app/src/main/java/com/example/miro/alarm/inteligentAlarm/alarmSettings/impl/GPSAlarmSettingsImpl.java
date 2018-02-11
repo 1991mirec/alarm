@@ -1,7 +1,14 @@
 package com.example.miro.alarm.inteligentAlarm.alarmSettings.impl;
 
 
+import android.Manifest;
+import android.app.Activity;
+import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.support.v4.app.ActivityCompat;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -9,21 +16,23 @@ import android.widget.TextView;
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.Settings;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.api.GPSAlarmSettings;
-import com.example.miro.alarm.inteligentAlarm.helper.InteligentAlarm;
 import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
-import com.example.miro.alarm.inteligentAlarm.helper.Repeat;
-import com.example.miro.alarm.tabFragments.AlarmFragment;
+import com.example.miro.alarm.inteligentAlarm.helper.Utils;
+import com.example.miro.alarm.receiver.GPSAlarmReceiver;
 import com.example.miro.alarm.tabFragments.GPSAlarmFragment;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.maps.model.LatLng;
 
 import org.json.JSONException;
 
 import java.io.Serializable;
-import java.util.Calendar;
 import java.util.Locale;
 
 public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, Serializable {
 
+    private static final int REQ_CODE_WAKE_UP = 70;
+    private static final long ONE_MINUTE_IN_MILLISECONDS = 60000;
     private int radius;
     private double latitude;
     private double longitude;
@@ -65,7 +74,11 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
             public void onClick(View v) {
                 isOn ^= true;
                 setVisuals(view);
-
+                if (isOn) {
+                    startPositionCheck();
+                } else {
+                    cancel();
+                }
                 try {
                     GPSAlarmFragment.updateAndSaveSharedPreferancesWithAlarmSettings(context);
                 } catch (JSONException e) {
@@ -126,6 +139,42 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
         } catch (JSONException e) {
             e.printStackTrace();
         }
+        final FusedLocationProviderClient f = new FusedLocationProviderClient(context);
+
+
+        final PendingIntent pendingIntent = PendingIntent.getBroadcast(context,
+                REQ_CODE_WAKE_UP, setUpIntent(), PendingIntent.FLAG_UPDATE_CURRENT);
+        f.removeLocationUpdates(pendingIntent);
+    }
+
+    private Intent setUpIntent() {
+        final ComponentName receiver = new ComponentName(context, GPSAlarmReceiver.class);
+        final PackageManager pm = context.getPackageManager();
+
+        pm.setComponentEnabledSetting(receiver,
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                PackageManager.DONT_KILL_APP);
+
+        return new Intent(context, GPSAlarmReceiver.class);
+    }
+
+    public void startPositionCheck() {
+        final Intent intent = setUpIntent();
+        final FusedLocationProviderClient f = new FusedLocationProviderClient(context);
+        final PendingIntent pendingIntent = PendingIntent.getBroadcast(context,
+                REQ_CODE_WAKE_UP, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Utils.requestAccessFinePermissions((Activity) context);
+            return;
+        }
+        LocationRequest lr = new LocationRequest();
+        lr.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
+                .setFastestInterval(ONE_MINUTE_IN_MILLISECONDS)
+                .setInterval(ONE_MINUTE_IN_MILLISECONDS * 45);
+
+        f.requestLocationUpdates(lr, pendingIntent);
     }
 }
 

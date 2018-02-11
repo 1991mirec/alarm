@@ -1,15 +1,10 @@
 package com.example.miro.alarm.tabFragments;
 
-import android.Manifest;
 import android.app.Activity;
-import android.app.PendingIntent;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentTransaction;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -22,22 +17,12 @@ import android.widget.ListView;
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.adapters.GpsAlarmAdapter;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.GPSAlarmSettingsImpl;
-import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.TimeAlarmSettingsImpl;
-import com.example.miro.alarm.inteligentAlarm.helper.InteligentAlarm;
 import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
-import com.example.miro.alarm.inteligentAlarm.helper.Repeat;
-import com.example.miro.alarm.inteligentAlarm.helper.Utils;
 import com.example.miro.alarm.main.GpsAlarmSettingActivity;
-import com.example.miro.alarm.receiver.GPSAlarmReceiver;
-import com.google.android.gms.location.FusedLocationProviderApi;
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationRequest;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.util.Calendar;
 
 /**
  * Created by Miro on 11/22/2016.
@@ -48,8 +33,7 @@ public class GPSAlarmFragment extends PlaceholderFragment implements FragmentSet
     private Context context;
     private View rootView;
     private static final int REQ_CODE = 79;
-    private static final int REQ_CODE_WAKE_UP = 70;
-    private static final long ONE_MINUTE_IN_MILLISECONDS = 60000;
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -110,38 +94,21 @@ public class GPSAlarmFragment extends PlaceholderFragment implements FragmentSet
 
             final int id = gpsSettingsReturned.getId();
             gpsSettings.get(id).setAlarm(gpsSettingsReturned);
-            final Intent intent = setUpIntent(gpsSettings.get(id));
-            final FusedLocationProviderClient f = new FusedLocationProviderClient(context);
-            final PendingIntent pendingIntent = PendingIntent.getBroadcast(context,
-                    REQ_CODE_WAKE_UP, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-                    != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                    context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                Utils.requestAccessFinePermissions(getActivity());
-                return;
-            }
-            LocationRequest lr = new LocationRequest();
-            lr.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
-                    .setFastestInterval(ONE_MINUTE_IN_MILLISECONDS)
-                    .setInterval(ONE_MINUTE_IN_MILLISECONDS * 45);
-
-            f.requestLocationUpdates(lr, pendingIntent);
+            gpsSettings.get(id).startPositionCheck();
             refresh();
         }
     }
 
-    private Intent setUpIntent(final GPSAlarmSettingsImpl gpsSettings) {
-        ComponentName receiver = new ComponentName(context, GPSAlarmReceiver.class);
-        PackageManager pm = context.getPackageManager();
-
-        pm.setComponentEnabledSetting(receiver,
-                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                PackageManager.DONT_KILL_APP);
-        final Intent intent = new Intent(context, GPSAlarmReceiver.class);
-
-        intent.setAction("intentGPS" + gpsSettings.getId());
-        return intent;
+    /**
+     * This should cancel the alarm because we either got to the place or
+     * we manualy changed it to turn of this alarm
+     * @param id id of a static list in {@link PlaceholderFragment} with gpsSettings
+     */
+    public static void cancel(final int id){
+        gpsSettings.get(id).cancel();
     }
+
+
 
     @Override
     public void removeButton(int id) {
@@ -167,15 +134,6 @@ public class GPSAlarmFragment extends PlaceholderFragment implements FragmentSet
         }
         FragmentTransaction ft = getFragmentManager().beginTransaction();
         ft.detach(this).attach(this).commit();
-    }
-
-    /**
-     * This should cancel the alarm because we either got to the place or
-     * we manualy changed it to turn of this alarm
-     * @param id id of a static list in {@link PlaceholderFragment} with gpsSettings
-     */
-    public static void cancel(final int id){
-        gpsSettings.get(id).cancel();
     }
 
     public static void updateAndSaveSharedPreferancesWithAlarmSettings(final Context context)

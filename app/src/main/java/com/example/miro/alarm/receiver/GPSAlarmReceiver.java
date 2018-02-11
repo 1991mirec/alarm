@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
-import android.support.test.espresso.core.deps.guava.base.Preconditions;
 import android.widget.Toast;
 
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.GPSAlarmSettingsImpl;
@@ -20,11 +19,10 @@ public class GPSAlarmReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        final int id = intent.getExtras().getInt("id");
-        if (("intentGPS" + id).equals(intent.getAction())) {
-            LocationResult lr = LocationResult.extractResult(intent);
-            if (lr != null) {
-                for (final GPSAlarmSettingsImpl gpsSettings: PlaceholderFragment.gpsSettings) {
+        LocationResult lr = LocationResult.extractResult(intent);
+        if (lr != null) {
+            for (final GPSAlarmSettingsImpl gpsSettings : PlaceholderFragment.gpsSettings) {
+                if (gpsSettings.isOn()) {
                     final double centerLa = gpsSettings.getCoordinates().latitude;
                     final double centerLo = gpsSettings.getCoordinates().longitude;
                     final int radius = gpsSettings.getRadius();
@@ -54,6 +52,7 @@ public class GPSAlarmReceiver extends BroadcastReceiver {
         intent.putExtra("type", gpsSettings.getType().getType().ordinal());
         intent.putExtra("nameOfSong", gpsSettings.getSong().getName());
         intent.putExtra("id", gpsSettings.getId());
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         return intent;
     }
 }
