@@ -1,5 +1,6 @@
 package com.example.miro.alarm.dialog;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
@@ -19,6 +20,10 @@ public class DaysDialogFragment extends DialogFragment {
     private DaysDialogListener listener;
     private Repeat repeat;
 
+    public DaysDialogFragment() {
+    }
+
+    @SuppressLint("ValidFragment")
     public DaysDialogFragment(Repeat repeat) {
         this.repeat = repeat;
     }
@@ -28,7 +33,6 @@ public class DaysDialogFragment extends DialogFragment {
     }
 
     @Override
-
     public void onAttach(Context context) {
         super.onAttach(context);
         listener = (DaysDialogListener) context;
@@ -42,7 +46,7 @@ public class DaysDialogFragment extends DialogFragment {
         // Set the dialog title
         CharSequence cs[] = {"Sunday", "Monday", "Tuesday", "Wednesday",
                 "Thrusday", "Friday", "Saturday"};
-        builder.setTitle("Title")
+        builder.setTitle("Repeat in days")
                 // Specify the list array, the items to be selected by default (null for none),
                 // and the listener through which to receive callbacks when items are selected
                 .setMultiChoiceItems(cs, repeat.getDays(),
@@ -59,6 +63,7 @@ public class DaysDialogFragment extends DialogFragment {
                     public void onClick(DialogInterface dialog, int id) {
                         repeat = tempRepeat;
                         listener.onDialogPositiveClick(DaysDialogFragment.this);
+
                     }
                 })
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {

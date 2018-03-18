@@ -1,6 +1,5 @@
 package com.example.miro.alarm.tabFragments;
 
-import android.widget.Button;
 import android.widget.LinearLayout;
 
 /**

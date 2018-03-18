@@ -1,13 +1,10 @@
 package com.example.miro.alarm.inteligentAlarm.alarmSettings;
 
-import android.support.test.espresso.core.deps.guava.base.Preconditions;
-
-import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.enums.Type;
 import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
-import com.example.miro.alarm.inteligentAlarm.helper.Repeat;
 import com.example.miro.alarm.inteligentAlarm.helper.SongImpl;
 import com.example.miro.alarm.inteligentAlarm.helper.TypeImpl;
+import com.google.common.base.Preconditions;
 
 import java.io.Serializable;
 

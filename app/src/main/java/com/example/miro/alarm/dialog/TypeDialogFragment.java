@@ -42,7 +42,7 @@ public class TypeDialogFragment extends DialogFragment {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         // Set the dialog title
         CharSequence cs[] = {"Sound", "Vibration", "Sound and Vibration"};
-        builder.setTitle("Title")
+        builder.setTitle("Type of alarm")
                 // Specify the list array, the items to be selected by default (null for none),
                 // and the listener through which to receive callbacks when items are selected
                 .setSingleChoiceItems(cs, type.getType().ordinal(),

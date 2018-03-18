@@ -17,7 +17,9 @@ import android.widget.ListView;
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.adapters.GpsAlarmAdapter;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.GPSAlarmSettingsImpl;
+import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.TimeAlarmSettingsImpl;
 import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
+import com.example.miro.alarm.inteligentAlarm.helper.Utils;
 import com.example.miro.alarm.main.GpsAlarmSettingActivity;
 
 import org.json.JSONArray;
@@ -43,7 +45,7 @@ public class GPSAlarmFragment extends PlaceholderFragment implements FragmentSet
         rootView = inflater.inflate(R.layout.fragment_main, container, false);
         if (gpsSettings.size() == 0) {
             try {
-                loadSharedPreferancesWithAlarmSettings();
+                gpsSettings.addAll(Utils.loadSharedPreferancesWithGPSAlarmSettings(context));
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -93,28 +95,22 @@ public class GPSAlarmFragment extends PlaceholderFragment implements FragmentSet
                     .getSerializable("gpsSettings");
 
             final int id = gpsSettingsReturned.getId();
-            gpsSettings.get(id).setAlarm(gpsSettingsReturned);
-            gpsSettings.get(id).startPositionCheck();
+            boolean wasOn = false;
+            if(gpsSettings.get(id).isOn()){
+                wasOn = true;
+            }
+            gpsSettings.get(id).setAlarm(gpsSettingsReturned, true);
+            gpsSettings.get(id).startPositionCheck(wasOn);
             refresh();
         }
     }
-
-    /**
-     * This should cancel the alarm because we either got to the place or
-     * we manualy changed it to turn of this alarm
-     * @param id id of a static list in {@link PlaceholderFragment} with gpsSettings
-     */
-    public static void cancel(final int id){
-        gpsSettings.get(id).cancel();
-    }
-
-
 
     @Override
     public void removeButton(int id) {
         gpsSettings.remove(id);
         try {
-            updateAndSaveSharedPreferancesWithAlarmSettings(getContext());
+            Utils.updateAndSaveSharedPreferancesWithGPSAlarmSettingsSpecific(getContext(),
+                    gpsSettings.get(id));
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -128,7 +124,7 @@ public class GPSAlarmFragment extends PlaceholderFragment implements FragmentSet
 
     private void refresh() {
         try {
-            updateAndSaveSharedPreferancesWithAlarmSettings(getContext());
+            Utils.updateAndSaveSharedPreferancesWithGPSAlarmSettings(getContext(), gpsSettings);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -136,65 +132,10 @@ public class GPSAlarmFragment extends PlaceholderFragment implements FragmentSet
         ft.detach(this).attach(this).commit();
     }
 
-    public static void updateAndSaveSharedPreferancesWithAlarmSettings(final Context context)
-            throws JSONException {
-        final JSONArray listOfSettings = new JSONArray();
-        for(final GPSAlarmSettingsImpl settings: gpsSettings){
-            final JSONObject obj = new JSONObject();
-            obj.put("name", settings.getName());
-            obj.put("songName", settings.getSong().getName());
-            obj.put("type", settings.getType().getType().ordinal());
-            obj.put("radius", settings.getRadius());
-            obj.put("longitude", settings.getCoordinates().longitude);
-            obj.put("latitude", settings.getCoordinates().latitude);
-            obj.put("volume", settings.getVolume());
-            final JSONObject postpone = new JSONObject();
-            postpone.put("isOn", settings.getPostpone().isOn());
-            postpone.put("minutes", settings.getPostpone().getMinutes());
-            postpone.put("timesOfRepeat", settings.getPostpone().getTimesOfRepeat());
-            obj.put("postpone", postpone);
-            obj.put("isOn", settings.isOn());
-            listOfSettings.put(settings.getId(), obj);
+    public static void cancel(final GPSAlarmSettingsImpl settings, final int id) {
+        if (gpsSettings.get(id) != null) {
+            gpsSettings.get(id).setAlarm(settings, false);
+            gpsSettings.get(id).updateVisuals();
         }
-        final JSONObject mainObj = new JSONObject();
-        mainObj.put("gpsAlarmSettings", listOfSettings);
-        final String stringToSave = mainObj.toString();
-        final SharedPreferences sharedPreferences = context.getApplicationContext()
-                .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        sharedPreferences.edit().putString("gpsSettings", stringToSave).apply();
-    }
-
-    private void loadSharedPreferancesWithAlarmSettings() throws JSONException {
-        final SharedPreferences sharedPreferences = getContext().getApplicationContext()
-                .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        final String main = sharedPreferences.getString("gpsSettings", null);
-        if (main != null) {
-            final JSONObject mainObject = new JSONObject(main);
-            final JSONArray array = mainObject.getJSONArray("gpsAlarmSettings");
-            for (int i = 0, size = array.length(); i < size; i++)
-            {
-                final String name = ((JSONObject) array.get(i)).getString("name");
-                final String songName = ((JSONObject) array.get(i)).getString("songName");
-                final int type = ((JSONObject) array.get(i)).getInt("type");
-                final int radius = ((JSONObject) array.get(i)).getInt("radius");
-                final double longitude = ((JSONObject) array.get(i)).getDouble("longitude");
-                final double latitude= ((JSONObject) array.get(i)).getDouble("latitude");
-                final int volume = ((JSONObject) array.get(i)).getInt("volume");
-                final boolean isOn = ((JSONObject) array.get(i)).getBoolean("isOn");
-
-
-                final JSONObject postpone = ((JSONObject) array.get(i)).getJSONObject("postpone");
-                final boolean postponeIsOn = postpone.getBoolean("isOn");
-                final int postponeMinutes = postpone.getInt("minutes");
-                final int postponeTimes = postpone.getInt("timesOfRepeat");
-                final Postpone postponeObj = new Postpone(postponeTimes, postponeMinutes,
-                        postponeIsOn);
-                final GPSAlarmSettingsImpl gpsSettingsReturned =
-                        new GPSAlarmSettingsImpl(context, i, name, volume, isOn, type, songName,
-                                postponeObj, radius, latitude, longitude);
-                gpsSettings.add(gpsSettingsReturned);
-            }
-        }
-
     }
 }

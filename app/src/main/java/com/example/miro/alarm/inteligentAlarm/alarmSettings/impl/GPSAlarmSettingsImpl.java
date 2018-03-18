@@ -19,7 +19,7 @@ import com.example.miro.alarm.inteligentAlarm.alarmSettings.api.GPSAlarmSettings
 import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
 import com.example.miro.alarm.inteligentAlarm.helper.Utils;
 import com.example.miro.alarm.receiver.GPSAlarmReceiver;
-import com.example.miro.alarm.tabFragments.GPSAlarmFragment;
+import com.example.miro.alarm.tabFragments.PlaceholderFragment;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.maps.model.LatLng;
@@ -33,13 +33,24 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
 
     private static final int REQ_CODE_WAKE_UP = 70;
     private static final long ONE_MINUTE_IN_MILLISECONDS = 60000;
+    private static PendingIntent pendingIntent = null;
     private int radius;
     private double latitude;
     private double longitude;
 
     private transient Context context;
-
     private transient ImageButton imgAlarm;
+
+    private static int isOnCount = 0;
+    private static LocationRequest lr;
+
+    static {
+        lr = new LocationRequest();
+        lr.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
+                .setFastestInterval(ONE_MINUTE_IN_MILLISECONDS)
+                .setInterval(ONE_MINUTE_IN_MILLISECONDS * 45);
+    }
+
 
     public GPSAlarmSettingsImpl(final Context context, final int id) {
         super(context.getString(R.string.default_alarm));
@@ -48,6 +59,7 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
         this.longitude = 45;
         this.radius = 1000;
         setId(id);
+
     }
 
     public GPSAlarmSettingsImpl(final Context context, final int id, final String name,
@@ -61,6 +73,9 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
         this.longitude = longitude;
         this.radius = radius;
         setId(id);
+        if (isOn && pendingIntent == null) {
+            startPositionCheck(false);
+        }
     }
 
     public void setVisuals(final View view) {
@@ -68,19 +83,21 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
         final TextView latLngTxtView = (TextView) view.findViewById(R.id.textViewLatLngGPS);
         final TextView nameTxtView = (TextView) view.findViewById(R.id.textViewNameGPS);
         imgAlarm = (ImageButton) view.findViewById(R.id.imageButtonGPS);
-
+        final GPSAlarmSettingsImpl alarmSettings = this;
         imgAlarm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 isOn ^= true;
                 setVisuals(view);
                 if (isOn) {
-                    startPositionCheck();
+                    startPositionCheck(false);
                 } else {
+                    isOnCount--;
                     cancel();
                 }
                 try {
-                    GPSAlarmFragment.updateAndSaveSharedPreferancesWithAlarmSettings(context);
+                    Utils.updateAndSaveSharedPreferancesWithGPSAlarmSettingsSpecific(context,
+                            alarmSettings);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -92,7 +109,7 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
         } else {
             imgAlarm.setImageResource(R.mipmap.alarm_black);
         }
-        final String latLngText = "Latitude: " + latitude + "  Longitude: " + longitude;
+        final String latLngText = String.format(Locale.ENGLISH, "Latitude: %.2f  Longitude: %.2f", latitude, longitude);
         latLngTxtView.setText(latLngText);
         double num = (double) radius / 1000;
         final String radiusText = String.format(Locale.ENGLISH, "%.2f", num);
@@ -102,16 +119,14 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
     }
 
     public int getRadius() {
-        // TODO implement me
         return radius;
     }
 
     public LatLng getCoordinates() {
-        // TODO implement me
         return new LatLng(latitude, longitude);
     }
 
-    public void setAlarm(final GPSAlarmSettingsImpl alarm) {
+    public void setAlarm(final GPSAlarmSettingsImpl alarm, final boolean isOn) {
         volume = alarm.getVolume();
         radius = alarm.getRadius();
         song = alarm.getSong();
@@ -119,7 +134,7 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
         type = alarm.getType();
         postpone = alarm.getPostpone();
         setLatLng(alarm.getCoordinates());
-        isOn = true;
+        this.isOn = isOn;
     }
 
     public void setLatLng(final LatLng latLng) {
@@ -131,20 +146,25 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
         this.radius = radius;
     }
 
-    public void cancel() {
-        isOn = false;
+    private void cancel() {
         imgAlarm.setImageResource(R.mipmap.alarm_black);
         try {
-            GPSAlarmFragment.updateAndSaveSharedPreferancesWithAlarmSettings(context);
+            Utils.updateAndSaveSharedPreferancesWithGPSAlarmSettingsSpecific(context, this);
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        final FusedLocationProviderClient f = new FusedLocationProviderClient(context);
 
-
-        final PendingIntent pendingIntent = PendingIntent.getBroadcast(context,
-                REQ_CODE_WAKE_UP, setUpIntent(), PendingIntent.FLAG_UPDATE_CURRENT);
-        f.removeLocationUpdates(pendingIntent);
+        if (isOnCount == 0) {
+            final FusedLocationProviderClient f = new FusedLocationProviderClient(context);
+            f.removeLocationUpdates(pendingIntent);
+            pendingIntent.cancel();
+            pendingIntent = null;
+        }
+        try {
+            Utils.updateAndSaveSharedPreferancesWithGeneralSettings(context, pendingIntent, isOnCount);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     private Intent setUpIntent() {
@@ -158,23 +178,36 @@ public class GPSAlarmSettingsImpl extends Settings implements GPSAlarmSettings, 
         return new Intent(context, GPSAlarmReceiver.class);
     }
 
-    public void startPositionCheck() {
-        final Intent intent = setUpIntent();
+    public void startPositionCheck(boolean wasOn) {
         final FusedLocationProviderClient f = new FusedLocationProviderClient(context);
-        final PendingIntent pendingIntent = PendingIntent.getBroadcast(context,
-                REQ_CODE_WAKE_UP, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Utils.requestAccessFinePermissions((Activity) context);
-            return;
-        }
-        LocationRequest lr = new LocationRequest();
-        lr.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
-                .setFastestInterval(ONE_MINUTE_IN_MILLISECONDS)
-                .setInterval(ONE_MINUTE_IN_MILLISECONDS * 45);
+        if (pendingIntent == null) {
+            final Intent intent = setUpIntent();
+            pendingIntent = PendingIntent.getBroadcast(context,
+                    REQ_CODE_WAKE_UP, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                    context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                Utils.requestAccessFinePermissions((Activity) context);
+                return;
+            }
 
-        f.requestLocationUpdates(lr, pendingIntent);
+            f.requestLocationUpdates(lr, pendingIntent);
+        } else {
+            f.requestLocationUpdates(lr, pendingIntent);
+        }
+        if (!wasOn){
+            isOnCount++;
+        }
+        try {
+            Utils.updateAndSaveSharedPreferancesWithGeneralSettings(context, pendingIntent, isOnCount);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void updateVisuals() {
+        isOnCount--;
+        imgAlarm.setImageResource(R.mipmap.alarm_black);
     }
 }
 

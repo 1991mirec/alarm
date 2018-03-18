@@ -34,6 +34,7 @@ import java.util.Calendar;
 public class TimeAlarmSettingsAdapter extends BaseAdapter {
 
     private TimeAlarmSettingsImpl settings;
+    private ViewGroup parent;
 
     public TimeAlarmSettingsAdapter(final TimeAlarmSettingsImpl settings) {
         this.settings = settings;
@@ -46,6 +47,16 @@ public class TimeAlarmSettingsAdapter extends BaseAdapter {
 
     @Override
     public Object getItem(int position) {
+        final Context context = parent.getContext();
+        final LayoutInflater inflater = LayoutInflater.from(context);
+        switch (position) {
+            case 1:
+                final RepeatHolder repeatHolder = new RepeatHolder();
+                return settings.getRepeat().setVisual(inflater, parent, repeatHolder);
+            case 2:
+                final TypeHolder typeHolder = new TypeHolder();
+                return settings.getType().setVisual(inflater, parent, typeHolder);
+        }
         return position;
     }
 
@@ -56,6 +67,7 @@ public class TimeAlarmSettingsAdapter extends BaseAdapter {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
+        this.parent = parent;
         final Context context = parent.getContext();
         final LayoutInflater inflater = LayoutInflater.from(context);
 

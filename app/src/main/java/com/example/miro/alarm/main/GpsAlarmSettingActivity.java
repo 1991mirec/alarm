@@ -36,9 +36,9 @@ public class GpsAlarmSettingActivity extends FragmentActivity implements View.On
         settings = (GPSAlarmSettingsImpl) intent.getExtras().getSerializable("gpsSettings");
         adapter = new GpsAlarmSettingsAdapter(settings);
 
-        final ListView listView1 = (ListView) findViewById(R.id.listView1);
-        listView1.setAdapter(adapter);
-        listView1.setOnItemClickListener(this);
+        final ListView listView = (ListView) findViewById(R.id.listView1);
+        listView.setAdapter(adapter);
+        listView.setOnItemClickListener(this);
         adapter.refresh(settings);
     }
 

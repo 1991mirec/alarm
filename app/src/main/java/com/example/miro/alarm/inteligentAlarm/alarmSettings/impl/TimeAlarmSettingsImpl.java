@@ -6,6 +6,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.support.annotation.VisibleForTesting;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -37,6 +38,7 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
     private Calendar time;
     private transient Context context;
     private transient ImageButton imgAlarm;
+    private transient TextView repeatTxtView;
 
 
     public TimeAlarmSettingsImpl(final Context context, final int id) {
@@ -72,32 +74,21 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
         return repeat;
     }
 
-    public void cancelAlarmOrRestart(final boolean resetAlarm, final long finalTime,
-                                     final boolean isNormal) {
+    private void cancelAlarm(final boolean isNormal) {
         Intent intent;
-        long timeBeforeRealAlarm = 0;
         if (isNormal) {
             intent = setUpIntent();
         } else {
-            timeBeforeRealAlarm = inteligentAlarm.getTimeBeforeRealAlaram() * Utils.ONE_MINUTE_MILISECONDS;
             intent = setUpInteligentIntent();
         }
         final PendingIntent penInt = PendingIntent.getBroadcast(context, REQ_CODE_WAKE_UP, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
         final AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if (am != null) {
-            if (!resetAlarm) {
-                am.cancel(penInt);
-                imgAlarm.setImageResource(R.mipmap.alarm_black);
-            } else {
-                this.time.setTimeInMillis(finalTime);
-                am.setExact(AlarmManager.RTC_WAKEUP, finalTime - timeBeforeRealAlarm, penInt);
-                try {
-                    AlarmFragment.updateAndSaveSharedPreferancesWithAlarmSettings(context);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
+            am.cancel(penInt);
+            penInt.cancel();
+            isOn = false;
+            imgAlarm.setImageResource(R.mipmap.alarm_black);
         }
     }
 
@@ -111,11 +102,32 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
         return time;
     }
 
+    public void updateVisuals() {
+        imgAlarm.setImageResource(R.mipmap.alarm_black);
+
+        repeat.setContext(context);
+        String today_tomorow = null;
+        if (repeat.toString().equals("Tomorrow")) {
+            today_tomorow = "Today";
+            if (time.get(Calendar.DAY_OF_MONTH) != Calendar.getInstance().get(Calendar.DAY_OF_MONTH)) {
+                today_tomorow = "Tomorrow";
+            }
+        }
+
+        if (today_tomorow != null) {
+            repeatTxtView.setText(today_tomorow);
+        } else {
+            repeatTxtView.setText(repeat.toString());
+        }
+
+    }
+
     public void setVisuals(final View view) {
         final TextView timeTxtView = (TextView) view.findViewById(R.id.textViewTime);
-        final TextView repeatTxtView = (TextView) view.findViewById(R.id.textViewRepeat);
+        repeatTxtView = (TextView) view.findViewById(R.id.textViewRepeat);
         final TextView nameTxtView = (TextView) view.findViewById(R.id.textViewName);
         imgAlarm = (ImageButton) view.findViewById(R.id.imageButton);
+        final TimeAlarmSettingsImpl settings = this;
 
         imgAlarm.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -125,11 +137,12 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
                 if (isOn) {
                     setAlarmManager();
                 } else {
-                    cancelAlarmOrRestart(false, 0, true);
-                    cancelAlarmOrRestart(false, 0, false);
+                    cancelAlarm(true);
+                    cancelAlarm(false);
                 }
                 try {
-                    AlarmFragment.updateAndSaveSharedPreferancesWithAlarmSettings(context);
+                    Utils.updateAndSaveSharedPreferancesWithAlarmSettingsClockSpecific(context,
+                            settings);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -377,12 +390,8 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
 
     private void managerSet(final long timeInMillis, final Intent intent,
                             final Intent intentInteligent) {
-        cancelAlarmOrRestart(false, 0, true);
-        cancelAlarmOrRestart(false, 0, false);
         final ComponentName receiver = new ComponentName(context, TimeAlarmReceiver.class);
         final PackageManager pm = context.getPackageManager();
-        Calendar a = Calendar.getInstance();
-        a.setTimeInMillis(timeInMillis);
 
         pm.setComponentEnabledSetting(receiver,
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED,

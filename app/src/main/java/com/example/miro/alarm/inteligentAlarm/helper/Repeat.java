@@ -1,15 +1,14 @@
 package com.example.miro.alarm.inteligentAlarm.helper;
 
 import android.content.Context;
-import android.support.test.espresso.core.deps.guava.base.Preconditions;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.example.miro.alarm.R;
-import com.example.miro.alarm.inteligentAlarm.adapters.TimeAlarmSettingsAdapter;
 import com.example.miro.alarm.inteligentAlarm.adapters.holders.RepeatHolder;
+import com.google.common.base.Preconditions;
 
 import java.io.Serializable;
 

@@ -4,12 +4,21 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.widget.Toast;
 
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.GPSAlarmSettingsImpl;
+import com.example.miro.alarm.inteligentAlarm.helper.Utils;
 import com.example.miro.alarm.main.WakeUp;
 import com.example.miro.alarm.tabFragments.PlaceholderFragment;
 import com.google.android.gms.location.LocationResult;
+
+import org.json.JSONException;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Miro on 11/17/2017.
@@ -19,9 +28,23 @@ public class GPSAlarmReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        try {
+            Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            Ringtone r = RingtoneManager.getRingtone(context.getApplicationContext(),
+                    notification);
+            r.play();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        List<GPSAlarmSettingsImpl> gpsAlarmSettings = new ArrayList<>();
+        try {
+            gpsAlarmSettings.addAll(Utils.loadSharedPreferancesWithGPSAlarmSettings(context));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
         LocationResult lr = LocationResult.extractResult(intent);
         if (lr != null) {
-            for (final GPSAlarmSettingsImpl gpsSettings : PlaceholderFragment.gpsSettings) {
+            for (final GPSAlarmSettingsImpl gpsSettings : gpsAlarmSettings) {
                 if (gpsSettings.isOn()) {
                     final double centerLa = gpsSettings.getCoordinates().latitude;
                     final double centerLo = gpsSettings.getCoordinates().longitude;
