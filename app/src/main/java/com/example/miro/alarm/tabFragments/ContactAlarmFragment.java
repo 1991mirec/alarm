@@ -5,7 +5,6 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
@@ -31,12 +30,8 @@ import com.android.volley.toolbox.Volley;
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.adapters.ContactAlarmAdapter;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.ContactAlarmSettingsImpl;
-import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.POIAlarmSettingsImpl;
 import com.example.miro.alarm.inteligentAlarm.enums.Permission;
 import com.example.miro.alarm.inteligentAlarm.helper.Contact;
-import com.example.miro.alarm.inteligentAlarm.helper.InteligentAlarm;
-import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
-import com.example.miro.alarm.inteligentAlarm.helper.Repeat;
 import com.example.miro.alarm.inteligentAlarm.helper.Utils;
 import com.example.miro.alarm.main.ContactAlarmSettingActivity;
 import com.google.common.base.Preconditions;
@@ -44,8 +39,6 @@ import com.google.common.base.Preconditions;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.util.Calendar;
 
 /**
  * Created by Miro on 11/22/2016.
@@ -68,7 +61,7 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
         rootView = inflater.inflate(R.layout.fragment_main, container, false);
         if (contactSettings.size() == 0) {
             try {
-                loadSharedPreferancesWithAlarmSettings();
+                contactSettings.addAll(Utils.loadSharedPreferancesWithContactAlarmSettings(context));
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -87,7 +80,7 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                if(contactSettings.get(position).gotPermission(view)) {
+                if (contactSettings.get(position).gotPermission(view)) {
                     Intent intent = new Intent(getActivity(), ContactAlarmSettingActivity.class);
                     intent.putExtra("contactSettings", contactSettings.get(position));
                     startActivityForResult(intent, REQ_CODE);
@@ -202,7 +195,7 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
 
     private void refresh() {
         try {
-            updateAndSaveSharedPreferancesWithAlarmSettings(getContext());
+            Utils.updateAndSaveSharedPreferancesWithContactAlarmSettings(getContext(), contactSettings);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -214,7 +207,8 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
     public void removeButton(int id) {
         contactSettings.remove(id);
         try {
-            updateAndSaveSharedPreferancesWithAlarmSettings(getContext());
+            Utils.updateAndSaveSharedPreferancesWithContactAlarmSettings(getContext(),
+                    contactSettings);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -227,11 +221,11 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
                 case REQ_CODE:
                     final Bundle extras = data.getExtras();
                     Preconditions.checkNotNull(extras);
-                    final ContactAlarmSettingsImpl poiSettingsReturned =
+                    final ContactAlarmSettingsImpl contactSettingsReturned =
                             (ContactAlarmSettingsImpl) extras.getSerializable("contactSettings");
-                    Preconditions.checkNotNull(poiSettingsReturned);
-                    final int contactId = poiSettingsReturned.getId();
-                    contactSettings.get(contactId).setAlarm(poiSettingsReturned);
+                    Preconditions.checkNotNull(contactSettingsReturned);
+                    final int contactId = contactSettingsReturned.getId();
+                    contactSettings.get(contactId).setAlarm(contactSettingsReturned, true);
                     refresh();
                     break;
                 case CONTACT_PICKER_RESULT:
@@ -294,76 +288,6 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
                         }
                     }
                     break;
-            }
-        }
-    }
-
-    public static void updateAndSaveSharedPreferancesWithAlarmSettings(final Context context)
-            throws JSONException {
-        final JSONArray listOfSettings = new JSONArray();
-        for (final ContactAlarmSettingsImpl settings : contactSettings) {
-            final JSONObject obj = new JSONObject();
-            obj.put("name", settings.getName());
-            obj.put("songName", settings.getSong().getName());
-            obj.put("type", settings.getType().getType().ordinal());
-            obj.put("radius", settings.getRadius());
-            obj.put("distanceType", settings.getDistanceType());
-            final JSONObject contact = new JSONObject();
-            contact.put("hasApp", settings.getContact().getHasApp());
-            contact.put("phoneNum", settings.getContact().getId());
-            contact.put("name", settings.getContact().getName());
-            contact.put("permission", settings.getContact().getPermission().name());
-            obj.put("contact", contact);
-            obj.put("volume", settings.getVolume());
-            final JSONObject postpone = new JSONObject();
-            postpone.put("isOn", settings.getPostpone().isOn());
-            postpone.put("minutes", settings.getPostpone().getMinutes());
-            postpone.put("timesOfRepeat", settings.getPostpone().getTimesOfRepeat());
-            obj.put("postpone", postpone);
-            obj.put("isOn", settings.isOn());
-            listOfSettings.put(settings.getId(), obj);
-        }
-        final JSONObject mainObj = new JSONObject();
-        mainObj.put("contactAlarmSettings", listOfSettings);
-        final String stringToSave = mainObj.toString();
-        final SharedPreferences sharedPreferences = context.getApplicationContext()
-                .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        sharedPreferences.edit().putString("contactSettings", stringToSave).apply();
-    }
-
-    private void loadSharedPreferancesWithAlarmSettings() throws JSONException {
-        final SharedPreferences sharedPreferences = getContext().getApplicationContext()
-                .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        final String main = sharedPreferences.getString("contactSettings", null);
-        if (main != null) {
-            final JSONObject mainObject = new JSONObject(main);
-            final JSONArray array = mainObject.getJSONArray("contactAlarmSettings");
-            for (int i = 0, size = array.length(); i < size; i++) {
-                final String name = ((JSONObject) array.get(i)).getString("name");
-                final String songName = ((JSONObject) array.get(i)).getString("songName");
-                final int type = ((JSONObject) array.get(i)).getInt("type");
-                final int volume = ((JSONObject) array.get(i)).getInt("volume");
-                final int radius = ((JSONObject) array.get(i)).getInt("radius");
-                final boolean isOn = ((JSONObject) array.get(i)).getBoolean("isOn");
-
-                final JSONObject contact = ((JSONObject) array.get(i)).getJSONObject("contact");
-                final boolean hasApp = contact.getBoolean("hasApp");
-                final String contactName = contact.getString("name");
-                final String contactNum = contact.getString("phoneNum");
-                final String contactPermission = contact.getString("permission");
-                final Permission permission = Permission.valueOf(contactPermission);
-                final Contact contactObj = new Contact(contactName, contactNum, hasApp, permission);
-                final JSONObject postpone = ((JSONObject) array.get(i)).getJSONObject("postpone");
-                final boolean postponeIsOn = postpone.getBoolean("isOn");
-                final int postponeMinutes = postpone.getInt("minutes");
-                final int postponeTimes = postpone.getInt("timesOfRepeat");
-                final String distanceType = ((JSONObject) array.get(i)).getString("distanceType");
-                final Postpone postponeObj = new Postpone(postponeTimes, postponeMinutes,
-                        postponeIsOn);
-                final ContactAlarmSettingsImpl contactSettingsReturned =
-                        new ContactAlarmSettingsImpl(context, i, name, volume, isOn, type, songName,
-                                postponeObj, contactObj, radius, distanceType);
-                contactSettings.add(contactSettingsReturned);
             }
         }
     }

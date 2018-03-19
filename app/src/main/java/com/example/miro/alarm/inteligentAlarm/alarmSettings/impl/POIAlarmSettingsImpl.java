@@ -2,17 +2,16 @@ package com.example.miro.alarm.inteligentAlarm.alarmSettings.impl;
 
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.miro.alarm.R;
-import com.example.miro.alarm.inteligentAlarm.alarmSettings.Settings;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.api.POIAlarmSettings;
 import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
-import com.example.miro.alarm.inteligentAlarm.helper.Repeat;
-import com.example.miro.alarm.tabFragments.POIAlarmFragment;
+import com.example.miro.alarm.inteligentAlarm.helper.Utils;
 
 import org.json.JSONException;
 
@@ -20,11 +19,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Locale;
 
-public class POIAlarmSettingsImpl extends Settings implements POIAlarmSettings, Serializable {
+public class POIAlarmSettingsImpl extends AbstractGPSNeededSettings implements POIAlarmSettings, Serializable {
 
     private transient Context context;
     private transient ImageButton imgAlarm;
-    private int radius;
     private String poiType;
     private String distanceType;
 
@@ -54,9 +52,10 @@ public class POIAlarmSettingsImpl extends Settings implements POIAlarmSettings, 
         final TextView name = (TextView) view.findViewById(R.id.textViewNamePOI);
         final TextView radiusTextBox = (TextView) view.findViewById(R.id.poiRadius);
         imgAlarm = (ImageButton) view.findViewById(R.id.imageButtonPOI);
-        final ImageView imagePoi= (ImageView) view.findViewById(R.id.imagePOIType);
+        final ImageView imagePoi = (ImageView) view.findViewById(R.id.imagePOIType);
         imagePoi.setImageResource(view.getResources().getIdentifier(poiType.toLowerCase(),
                 "drawable", context.getPackageName()));
+        final POIAlarmSettingsImpl poiAlarmSettings = this;
         imgAlarm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -64,7 +63,7 @@ public class POIAlarmSettingsImpl extends Settings implements POIAlarmSettings, 
                 setVisuals(view);
 
                 try {
-                    POIAlarmFragment.updateAndSaveSharedPreferancesWithAlarmSettings(context);
+                    Utils.updateAndSaveSharedPreferancesWithPOIAlarmSettingsSpecific(context, poiAlarmSettings);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -106,7 +105,7 @@ public class POIAlarmSettingsImpl extends Settings implements POIAlarmSettings, 
         return poiTypes;
     }
 
-    public void setAlarm(final POIAlarmSettingsImpl alarm) {
+    public void setAlarm(final POIAlarmSettingsImpl alarm, final boolean isOn) {
         volume = alarm.getVolume();
         radius = alarm.getRadius();
         song = alarm.getSong();
@@ -115,17 +114,7 @@ public class POIAlarmSettingsImpl extends Settings implements POIAlarmSettings, 
         postpone = alarm.getPostpone();
         distanceType = alarm.getDistanceType();
         poiType = alarm.getPoiType();
-        isOn = true;
-    }
-
-    @Override
-    public int getRadius() {
-        return radius;
-    }
-
-    @Override
-    public void setRadius(int radius) {
-        this.radius = radius;
+        this.isOn = isOn;
     }
 
     public String getDistanceType() {
@@ -134,6 +123,20 @@ public class POIAlarmSettingsImpl extends Settings implements POIAlarmSettings, 
 
     public void setDistanceType(final String distanceType) {
         this.distanceType = distanceType;
+    }
+
+    @Override
+    void setUpLocalIntent(final Intent intent) {
+        intent.putExtra("gpsAlarmType", "poi");
+    }
+
+    @Override
+    void saveSpecific() {
+        try {
+            Utils.updateAndSaveSharedPreferancesWithPOIAlarmSettingsSpecific(context, this);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 }
 

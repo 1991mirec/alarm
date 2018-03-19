@@ -3,7 +3,6 @@ package com.example.miro.alarm.tabFragments;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.FragmentTransaction;
 import android.view.LayoutInflater;
@@ -17,14 +16,10 @@ import android.widget.ListView;
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.adapters.GpsAlarmAdapter;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.GPSAlarmSettingsImpl;
-import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.TimeAlarmSettingsImpl;
-import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
 import com.example.miro.alarm.inteligentAlarm.helper.Utils;
 import com.example.miro.alarm.main.GpsAlarmSettingActivity;
 
-import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 /**
  * Created by Miro on 11/22/2016.
@@ -96,7 +91,7 @@ public class GPSAlarmFragment extends PlaceholderFragment implements FragmentSet
 
             final int id = gpsSettingsReturned.getId();
             boolean wasOn = false;
-            if(gpsSettings.get(id).isOn()){
+            if (gpsSettings.get(id).isOn()) {
                 wasOn = true;
             }
             gpsSettings.get(id).setAlarm(gpsSettingsReturned, true);
@@ -109,8 +104,8 @@ public class GPSAlarmFragment extends PlaceholderFragment implements FragmentSet
     public void removeButton(int id) {
         gpsSettings.remove(id);
         try {
-            Utils.updateAndSaveSharedPreferancesWithGPSAlarmSettingsSpecific(getContext(),
-                    gpsSettings.get(id));
+            Utils.updateAndSaveSharedPreferancesWithGPSAlarmSettings(getContext(),
+                    gpsSettings);
         } catch (JSONException e) {
             e.printStackTrace();
         }

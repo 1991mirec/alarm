@@ -12,7 +12,6 @@ import android.widget.Toast;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.GPSAlarmSettingsImpl;
 import com.example.miro.alarm.inteligentAlarm.helper.Utils;
 import com.example.miro.alarm.main.WakeUp;
-import com.example.miro.alarm.tabFragments.PlaceholderFragment;
 import com.google.android.gms.location.LocationResult;
 
 import org.json.JSONException;
@@ -27,7 +26,7 @@ import java.util.List;
 public class GPSAlarmReceiver extends BroadcastReceiver {
 
     @Override
-    public void onReceive(Context context, Intent intent) {
+    public void onReceive(final Context context, final Intent intent) {
         try {
             Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
             Ringtone r = RingtoneManager.getRingtone(context.getApplicationContext(),
@@ -36,33 +35,36 @@ public class GPSAlarmReceiver extends BroadcastReceiver {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        List<GPSAlarmSettingsImpl> gpsAlarmSettings = new ArrayList<>();
-        try {
-            gpsAlarmSettings.addAll(Utils.loadSharedPreferancesWithGPSAlarmSettings(context));
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        LocationResult lr = LocationResult.extractResult(intent);
-        if (lr != null) {
-            for (final GPSAlarmSettingsImpl gpsSettings : gpsAlarmSettings) {
-                if (gpsSettings.isOn()) {
-                    final double centerLa = gpsSettings.getCoordinates().latitude;
-                    final double centerLo = gpsSettings.getCoordinates().longitude;
-                    final int radius = gpsSettings.getRadius();
-                    float[] distance = new float[2];
-                    Toast.makeText(context, "I am here again" + radius + " " + centerLa + " " + centerLo, Toast.LENGTH_LONG).show();
-                    Location.distanceBetween(lr.getLastLocation().getLatitude(),
-                            lr.getLastLocation().getLongitude(), centerLa, centerLo, distance);
-                    if (distance[0] < radius) {
+        final String gpsAlarmType = intent.getStringExtra("gpsAlarmType");
+        if ("gps".equals(gpsAlarmType)) {
+            final List<GPSAlarmSettingsImpl> gpsAlarmSettings = new ArrayList<>();
+            try {
+                gpsAlarmSettings.addAll(Utils.loadSharedPreferancesWithGPSAlarmSettings(context));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            final LocationResult lr = LocationResult.extractResult(intent);
+            if (lr != null) {
+                for (final GPSAlarmSettingsImpl gpsSettings : gpsAlarmSettings) {
+                    if (gpsSettings.isOn()) {
+                        final double centerLa = gpsSettings.getCoordinates().latitude;
+                        final double centerLo = gpsSettings.getCoordinates().longitude;
+                        final int radius = gpsSettings.getRadius();
+                        float[] distance = new float[2];
+                        Toast.makeText(context, "I am here again" + radius + " " + centerLa + " " + centerLo, Toast.LENGTH_LONG).show();
+                        Location.distanceBetween(lr.getLastLocation().getLatitude(),
+                                lr.getLastLocation().getLongitude(), centerLa, centerLo, distance);
+                        if (distance[0] < radius) {
 
-                        context.startActivity(setUpIntent(context, gpsSettings));
+                            context.startActivity(setUpGPSIntent(context, gpsSettings));
+                        }
                     }
                 }
             }
         }
     }
 
-    private Intent setUpIntent(final Context context, final GPSAlarmSettingsImpl gpsSettings) {
+    private Intent setUpGPSIntent(final Context context, final GPSAlarmSettingsImpl gpsSettings) {
         final Intent intent = new Intent(context, WakeUp.class);
         intent.putExtra("isNormal", "gps");
         intent.putExtra("name", gpsSettings.getName());

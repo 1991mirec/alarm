@@ -239,7 +239,7 @@ public class WakeUp extends FragmentActivity {
             f.removeLocationUpdates(pendingIntent);
             pendingIntent.cancel();
         }
-        Utils.updateAndSaveSharedPreferancesWithGeneralSettings(context, null, isOn);
+        Utils.updateAndSaveSharedPreferancesWithGeneralSettings(context, isOn);
     }
 
     private Intent setUpIntentGPS() {

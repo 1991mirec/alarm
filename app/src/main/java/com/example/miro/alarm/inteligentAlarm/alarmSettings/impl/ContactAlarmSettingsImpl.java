@@ -2,8 +2,7 @@ package com.example.miro.alarm.inteligentAlarm.alarmSettings.impl;
 
 
 import android.content.Context;
-import android.graphics.drawable.ColorDrawable;
-import android.os.Process;
+import android.content.Intent;
 import android.support.v4.content.ContextCompat;
 import android.view.View;
 import android.widget.ImageButton;
@@ -17,14 +16,11 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.miro.alarm.R;
-import com.example.miro.alarm.inteligentAlarm.alarmSettings.Settings;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.api.ContactAlarmSettings;
 import com.example.miro.alarm.inteligentAlarm.enums.Permission;
 import com.example.miro.alarm.inteligentAlarm.helper.Contact;
 import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
-import com.example.miro.alarm.inteligentAlarm.helper.Repeat;
 import com.example.miro.alarm.inteligentAlarm.helper.Utils;
-import com.example.miro.alarm.tabFragments.ContactAlarmFragment;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -32,10 +28,9 @@ import org.json.JSONObject;
 import java.io.Serializable;
 import java.util.Locale;
 
-public class ContactAlarmSettingsImpl extends Settings implements ContactAlarmSettings, Serializable {
+public class ContactAlarmSettingsImpl extends AbstractGPSNeededSettings implements ContactAlarmSettings, Serializable {
 
     private Contact contact;
-    private int radius;
     private String distanceType;
 
     private transient Context context;
@@ -71,15 +66,6 @@ public class ContactAlarmSettingsImpl extends Settings implements ContactAlarmSe
         return contact;
     }
 
-    public int getRadius() {
-        return radius;
-    }
-
-    @Override
-    public void setRadius(int radius) {
-        this.radius = radius;
-    }
-
     public boolean gotPermission(final View view) {
         if (contact.getPermission() == Permission.RECEIVED_PERMISSION) {
             return true;
@@ -91,7 +77,7 @@ public class ContactAlarmSettingsImpl extends Settings implements ContactAlarmSe
                 item.put("number", contact.getId());
                 input.put("input", item);
                 RequestQueue queue = Volley.newRequestQueue(context);
-                String url = String.format("%s/grantPermission",  Utils.API_PREFIX);
+                String url = String.format("%s/grantPermission", Utils.API_PREFIX);
                 JsonObjectRequest jsonObjectRequest = new JsonObjectRequest
                         (Request.Method.POST, url, input, new Response.Listener<JSONObject>() {
                             @Override
@@ -105,8 +91,8 @@ public class ContactAlarmSettingsImpl extends Settings implements ContactAlarmSe
                         }, new Response.ErrorListener() {
                             @Override
                             public void onErrorResponse(VolleyError error) {
-                                    Toast.makeText(context, "Failed to connect with server",
-                                            Toast.LENGTH_SHORT).show();
+                                Toast.makeText(context, "Failed to connect with server",
+                                        Toast.LENGTH_SHORT).show();
                             }
                         });
                 queue.add(jsonObjectRequest);
@@ -136,6 +122,7 @@ public class ContactAlarmSettingsImpl extends Settings implements ContactAlarmSe
         } else {
             view.setBackgroundColor(ContextCompat.getColor(context, R.color.yellowBackground));
         }
+        final ContactAlarmSettingsImpl alarmSettings = this;
         imgAlarm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -148,7 +135,8 @@ public class ContactAlarmSettingsImpl extends Settings implements ContactAlarmSe
                         imgAlarm.setImageResource(R.mipmap.alarm_black);
                     }
                     try {
-                        ContactAlarmFragment.updateAndSaveSharedPreferancesWithAlarmSettings(context);
+                        Utils.updateAndSaveSharedPreferancesWithContactAlarmSettingsSpecific(context,
+                                alarmSettings);
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -172,7 +160,7 @@ public class ContactAlarmSettingsImpl extends Settings implements ContactAlarmSe
         nameTxtView.setText(name + " " + contact.getId());
     }
 
-    public void setAlarm(ContactAlarmSettingsImpl alarm) {
+    public void setAlarm(final ContactAlarmSettingsImpl alarm, final boolean isOn) {
         volume = alarm.getVolume();
         radius = alarm.getRadius();
         song = alarm.getSong();
@@ -181,7 +169,7 @@ public class ContactAlarmSettingsImpl extends Settings implements ContactAlarmSe
         postpone = alarm.getPostpone();
         contact = alarm.getContact();
         radius = alarm.getRadius();
-        isOn = true;
+        this.isOn = isOn;
     }
 
     public void setDistanceType(final String distanceType) {
@@ -190,6 +178,20 @@ public class ContactAlarmSettingsImpl extends Settings implements ContactAlarmSe
 
     public String getDistanceType() {
         return distanceType;
+    }
+
+    @Override
+    void setUpLocalIntent(final Intent intent) {
+        intent.putExtra("gpsAlarmType", "contact");
+    }
+
+    @Override
+    void saveSpecific() {
+        try {
+            Utils.updateAndSaveSharedPreferancesWithContactAlarmSettingsSpecific(context, this);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 }
 
