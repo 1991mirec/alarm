@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:descendantFocusability="blocksDescendants"
-    android:background="@color/redBackground"
+    android:background="@color/yellowBackground"
     android:layout_height="wrap_content">
 
     <ImageButton

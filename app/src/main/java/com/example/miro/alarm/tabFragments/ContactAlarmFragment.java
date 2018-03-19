@@ -20,6 +20,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -31,11 +32,14 @@ import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.adapters.ContactAlarmAdapter;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.ContactAlarmSettingsImpl;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.POIAlarmSettingsImpl;
+import com.example.miro.alarm.inteligentAlarm.enums.Permission;
 import com.example.miro.alarm.inteligentAlarm.helper.Contact;
 import com.example.miro.alarm.inteligentAlarm.helper.InteligentAlarm;
 import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
 import com.example.miro.alarm.inteligentAlarm.helper.Repeat;
+import com.example.miro.alarm.inteligentAlarm.helper.Utils;
 import com.example.miro.alarm.main.ContactAlarmSettingActivity;
+import com.google.common.base.Preconditions;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -77,12 +81,13 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
 
     @Override
     public LinearLayout initiateButtons() {
+        checkConcactRequests();
         final ListView listView = (ListView) rootView.findViewById(R.id.listViewAlarm);
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                if(contactSettings.get(position).gotPermission()) {
+                if(contactSettings.get(position).gotPermission(view)) {
                     Intent intent = new Intent(getActivity(), ContactAlarmSettingActivity.class);
                     intent.putExtra("contactSettings", contactSettings.get(position));
                     startActivityForResult(intent, REQ_CODE);
@@ -95,6 +100,80 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
             listView.setAdapter(adapter);
         }
         return null;
+    }
+
+    private void checkConcactRequests() {
+        //check whether or not there is someone asking me for location sharing
+        RequestQueue queue = Volley.newRequestQueue(context);
+        String url = String.format("%s/whoWantsMe/%s", Utils.API_PREFIX, Utils.MY_PHONE_NUMBER);
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @SuppressLint("ShowToast")
+            @Override
+            public void onResponse(String response) {
+                try {
+                    JSONObject jsonObj = new JSONObject(response);
+                    final JSONArray users = jsonObj.getJSONArray("users");
+                    for (int i = 0; i < users.length(); i++) {
+                        final JSONObject user = users.getJSONObject(i);
+                        final String name = user.getString("name");
+                        final String number = user.getString("number");
+                        setUpContact = new Contact(name, number, true,
+                                Permission.I_AM_ASKED_FOR_PERMIISION);
+                        boolean contactExist = false;
+                        for (ContactAlarmSettingsImpl setting : contactSettings) {
+                            if (setting.getContact().getId().equals(number)) {
+                                contactExist = true;
+                                break;
+                            }
+                        }
+                        if (!contactExist) {
+                            addButton();
+                        }
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @SuppressLint("ShowToast")
+            @Override
+            public void onErrorResponse(VolleyError error) {
+
+            }
+        });
+        queue.add(stringRequest);
+
+        //check whether or not there someone agreed on my request for location sharing
+        queue = Volley.newRequestQueue(context);
+        url = String.format("%s/myRequests/%s", Utils.API_PREFIX, Utils.MY_PHONE_NUMBER);
+        stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @SuppressLint("ShowToast")
+            @Override
+            public void onResponse(String response) {
+                try {
+                    JSONObject jsonObj = new JSONObject(response);
+                    final JSONArray users = jsonObj.getJSONArray("users");
+                    for (int i = 0; i < users.length(); i++) {
+                        final JSONObject user = users.getJSONObject(i);
+                        final String number = user.getString("number");
+                        for (ContactAlarmSettingsImpl setting : contactSettings) {
+                            if (setting.getContact().getId().equals(number)) {
+                                setting.getContact().setPermission(Permission.RECEIVED_PERMISSION);
+                            }
+                        }
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @SuppressLint("ShowToast")
+            @Override
+            public void onErrorResponse(VolleyError error) {
+
+            }
+        });
+        queue.add(stringRequest);
     }
 
     @Override
@@ -117,6 +196,7 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
             contactSettings.add(contactAlarmSettings);
 
             refresh();
+            setUpContact = null;
         }
     }
 
@@ -145,9 +225,11 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
         if (resultCode == Activity.RESULT_OK) {
             switch (requestCode) {
                 case REQ_CODE:
-                    final ContactAlarmSettingsImpl poiSettingsReturned = (ContactAlarmSettingsImpl) data.getExtras()
-                            .getSerializable("contactSettings");
-
+                    final Bundle extras = data.getExtras();
+                    Preconditions.checkNotNull(extras);
+                    final ContactAlarmSettingsImpl poiSettingsReturned =
+                            (ContactAlarmSettingsImpl) extras.getSerializable("contactSettings");
+                    Preconditions.checkNotNull(poiSettingsReturned);
                     final int contactId = poiSettingsReturned.getId();
                     contactSettings.get(contactId).setAlarm(poiSettingsReturned);
                     refresh();
@@ -170,25 +252,40 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
                             int columnIndex = cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER);
                             cursor.moveToFirst();
                             final String phoneNumber = cursor.getString(columnIndex);
+                            boolean contactExist = false;
+                            for (ContactAlarmSettingsImpl setting : contactSettings) {
+                                if (setting.getContact().getId().equals(phoneNumber)) {
+                                    Toast.makeText(context, "Contact already exist", Toast.LENGTH_SHORT)
+                                            .show();
+                                    contactExist = true;
+                                    break;
+                                }
+                            }
+                            if (contactExist) {
+                                break;
+                            }
                             columnIndex = cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME);
                             final String displayName = cursor.getString(columnIndex);
                             cursor.close();
                             RequestQueue queue = Volley.newRequestQueue(context);
-                            String url = String.format("http://127.0.0.1:8000/numberHasInstalled/%s", phoneNumber);
+                            String url = String.format("%s/numberHasInstalled/%s", Utils.API_PREFIX, phoneNumber);
                             StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
                                 @SuppressLint("ShowToast")
                                 @Override
                                 public void onResponse(String response) {
                                     final boolean hasApp = true;
-                                    setUpContact = new Contact(displayName, phoneNumber, hasApp);
+                                    setUpContact = new Contact(displayName, phoneNumber, hasApp,
+                                            Permission.PENDING_PERMISSION);
                                     addButton();
+
                                 }
                             }, new Response.ErrorListener() {
                                 @SuppressLint("ShowToast")
                                 @Override
                                 public void onErrorResponse(VolleyError error) {
-                                    final boolean hasApp = true;
-                                    setUpContact = new Contact(displayName, phoneNumber, hasApp);
+                                    final boolean hasApp = false;
+                                    setUpContact = new Contact(displayName, phoneNumber, hasApp,
+                                            Permission.PENDING_PERMISSION);
                                     //TODO send text message with link but only if owner agrees to send message
                                     addButton();
                                 }
@@ -204,7 +301,7 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
     public static void updateAndSaveSharedPreferancesWithAlarmSettings(final Context context)
             throws JSONException {
         final JSONArray listOfSettings = new JSONArray();
-        for(final ContactAlarmSettingsImpl settings: contactSettings){
+        for (final ContactAlarmSettingsImpl settings : contactSettings) {
             final JSONObject obj = new JSONObject();
             obj.put("name", settings.getName());
             obj.put("songName", settings.getSong().getName());
@@ -215,6 +312,7 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
             contact.put("hasApp", settings.getContact().getHasApp());
             contact.put("phoneNum", settings.getContact().getId());
             contact.put("name", settings.getContact().getName());
+            contact.put("permission", settings.getContact().getPermission().name());
             obj.put("contact", contact);
             obj.put("volume", settings.getVolume());
             final JSONObject postpone = new JSONObject();
@@ -252,7 +350,9 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
                 final boolean hasApp = contact.getBoolean("hasApp");
                 final String contactName = contact.getString("name");
                 final String contactNum = contact.getString("phoneNum");
-                final Contact contactObj = new Contact(contactName, contactNum, hasApp);
+                final String contactPermission = contact.getString("permission");
+                final Permission permission = Permission.valueOf(contactPermission);
+                final Contact contactObj = new Contact(contactName, contactNum, hasApp, permission);
                 final JSONObject postpone = ((JSONObject) array.get(i)).getJSONObject("postpone");
                 final boolean postponeIsOn = postpone.getBoolean("isOn");
                 final int postponeMinutes = postpone.getInt("minutes");

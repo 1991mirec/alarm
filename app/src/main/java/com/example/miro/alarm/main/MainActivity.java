@@ -35,9 +35,11 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.miro.alarm.R;
+import com.example.miro.alarm.inteligentAlarm.helper.Utils;
 import com.example.miro.alarm.tabFragments.AlarmFragment;
 import com.example.miro.alarm.tabFragments.ContactAlarmFragment;
 import com.example.miro.alarm.tabFragments.GPSAlarmFragment;
@@ -56,7 +58,7 @@ import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
 
     private SharedPreferences sharedPreferences;
-    private String phoneNumber = null;
+
     private String name = null;
     private static final String PREFS_NAME = "MyPrefsFile";
 
@@ -92,30 +94,30 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
         sharedPreferences = getApplicationContext()
                 .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        final SharedPreferences.Editor editor = sharedPreferences.edit()
-                .putBoolean("FirstTimeContact", true);
-        editor.apply();
         final boolean isFirstTime = sharedPreferences.getBoolean("FirstTimeContact", true);
         if (isFirstTime) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED
-                    && ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS,
-                        Manifest.permission.READ_PHONE_STATE}, 0);
+                    && ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED
+                    && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions();
             } else {
                 TelephonyManager tMgr = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
                 String deviceId = null;
                 if (tMgr != null) {
-                    phoneNumber = tMgr.getLine1Number();
+                    Utils.MY_PHONE_NUMBER = tMgr.getLine1Number();
                     deviceId = tMgr.getDeviceId();
                 }
 
                 String name = null;
-                if (null == phoneNumber || "".equals(phoneNumber)) {
+                if (null == Utils.MY_PHONE_NUMBER || "".equals(Utils.MY_PHONE_NUMBER)) {
                     getInfoWithoutNumber(deviceId);
                 } else {
                     getInfoWithNumber(deviceId);
                 }
             }
+        } else {
+            Utils.MY_PHONE_NUMBER = sharedPreferences.getString("myPhoneNumber", "");
         }
     }
 
@@ -141,12 +143,12 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                 TelephonyManager tMgr = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
                 String deviceId = null;
                 if (tMgr != null) {
-                    phoneNumber = tMgr.getLine1Number();
+                    Utils.MY_PHONE_NUMBER = tMgr.getLine1Number();
                     deviceId = tMgr.getDeviceId();
                 }
 
                 String name = null;
-                if (null == phoneNumber || "".equals(phoneNumber)) {
+                if (null == Utils.MY_PHONE_NUMBER || "".equals(Utils.MY_PHONE_NUMBER)) {
                     getInfoWithoutNumber(deviceId);
                 } else {
                     getInfoWithNumber(deviceId);
@@ -254,7 +256,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                phoneNumber = input.getText().toString();
+                Utils.MY_PHONE_NUMBER = input.getText().toString();
                 sendToAPI(deviceId);
             }
         });
@@ -298,7 +300,8 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                phoneNumber = phoneNum.getText().toString();
+                Utils.MY_PHONE_NUMBER = phoneNum.getText().toString();
+                sharedPreferences.edit().putString("myPhoneNumber", Utils.MY_PHONE_NUMBER).apply();
                 name = nameText.getText().toString();
                 sendToAPI(deviceId);
             }
@@ -315,13 +318,10 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     }
 
     private void sendToAPI(final String deviceId) {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions();
-            return;
-        }
         final FusedLocationProviderClient f = new FusedLocationProviderClient(this);
-
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions();
+        }
         f.getLastLocation().addOnCompleteListener(new OnCompleteListener<Location>() {
             @Override
             public void onComplete(@NonNull Task<Location> task) {
@@ -333,35 +333,42 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                     JSONObject input = new JSONObject();
                     JSONObject item = new JSONObject();
                     item.put("location", latLng);
-                    item.put("phone-number", phoneNumber);
+                    item.put("number", Utils.MY_PHONE_NUMBER);
                     item.put("name", name);
-                    item.put("device-id", deviceId);
                     input.put("input", item);
-                    final String message = input.toString();
                     RequestQueue queue = Volley.newRequestQueue(getApplicationContext());
-                    String url = "http://127.0.0.1:8000/createUser";
-                    StringRequest stringRequest = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
-                        @SuppressLint("ShowToast")
-                        @Override
-                        public void onResponse(String response) {
-                            Toast.makeText(getApplicationContext(), "User created successfully",
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    }, new Response.ErrorListener() {
-                        @SuppressLint("ShowToast")
-                        @Override
-                        public void onErrorResponse(VolleyError error) {
-                            Toast.makeText(getApplicationContext(), "User creation failed",
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                    queue.add(stringRequest);
+                    String url = String.format("%s/createUser", Utils.API_PREFIX);
+                    JsonObjectRequest jsonObjectRequest = new JsonObjectRequest
+                            (Request.Method.POST, url, input, new Response.Listener<JSONObject>() {
+
+                                @Override
+                                public void onResponse(JSONObject response) {
+                                    Toast.makeText(getApplicationContext(), "User created successfully",
+                                            Toast.LENGTH_SHORT).show();
+                                    sharedPreferences.edit()
+                                            .putBoolean("FirstTimeContact", false).apply();
+                                }
+                            }, new Response.ErrorListener() {
+
+                                @Override
+                                public void onErrorResponse(VolleyError error) {
+                                    if (error.networkResponse.statusCode == 409) {
+                                        Toast.makeText(getApplicationContext(), "User creation failed because user exist",
+                                                Toast.LENGTH_SHORT).show();
+                                        sharedPreferences.edit()
+                                                .putBoolean("FirstTimeContact", false).apply();
+                                    } else {
+                                        Toast.makeText(getApplicationContext(), "User creation failed",
+                                                Toast.LENGTH_SHORT).show();
+                                        Process.killProcess(Process.myPid());
+                                    }
+                                }
+                            });
+                    queue.add(jsonObjectRequest);
                 } catch (JSONException e) {
                     System.out.print("problem");
                 }
-                final SharedPreferences.Editor editor = sharedPreferences.edit()
-                        .putBoolean("FirstTimeContact", false);
-                editor.apply();
+
             }
         });
 
@@ -369,7 +376,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
     private void requestPermissions() {
         ActivityCompat.requestPermissions(this,
-                new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                1);
+                new String[]{Manifest.permission.READ_SMS, Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.READ_PHONE_STATE}, 0);
     }
 }

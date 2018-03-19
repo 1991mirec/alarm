@@ -30,6 +30,8 @@ public class Utils {
 
     public static final long ONE_MINUTE_MILISECONDS = 60000;
     public static final long ONE_DAY_MILISECONDS = 86400000;
+    public static String MY_PHONE_NUMBER;
+    public static final String API_PREFIX= "http://192.168.0.103:15001";
 
     private static final String PREFS_NAME = "MyPrefsFile";
 

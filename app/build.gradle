@@ -37,7 +37,7 @@ dependencies {
     compile 'com.android.support.test:monitor:1.0.2-alpha1'
     compile 'com.google.android.gms:play-services-maps:11.0.4'
     compile 'com.google.android.gms:play-services-location:11.0.4'
-    compile 'com.android.volley:volley:1.0.0'
+    compile 'com.android.volley:volley:1.1.0'
     compile 'com.google.guava:guava:23.3-android'
 
     compile 'junit:junit:4.12'
