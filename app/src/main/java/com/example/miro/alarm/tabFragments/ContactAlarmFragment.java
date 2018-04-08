@@ -88,6 +88,14 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
                 }
             }
         });
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                removeButton((int)id);
+                refresh();
+                return true;
+            }
+        });
         if (!contactSettings.isEmpty()) {
             final ContactAlarmAdapter adapter = new ContactAlarmAdapter(context, R.layout.contact_buttons,
                     contactSettings.toArray(new ContactAlarmSettingsImpl[contactSettings.size()]));
@@ -237,7 +245,7 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
                     if (contactSettings.get(contactId).isOn()) {
                         wasOn = true;
                     }*/
-                    poiSettings.get(contactId).startPositionCheck();
+                    contactSettings.get(contactId).startPositionCheck();
                     refresh();
                     break;
                 case CONTACT_PICKER_RESULT:
@@ -293,7 +301,7 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
                                     setUpContact = new Contact(displayName, phoneNumber, hasApp,
                                             Permission.PENDING_PERMISSION);
 
-                                    //TODO send text message with link but only if owner agrees to send message
+                                    //TODO: improvement -> send text message with link but only if owner agrees to send message
                                     addButton();
                                 }
                             });

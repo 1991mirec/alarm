@@ -94,6 +94,14 @@ public class POIAlarmFragment extends PlaceholderFragment implements FragmentSet
                 startActivityForResult(intent, REQ_CODE);
             }
         });
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                removeButton((int) id);
+                refresh();
+                return true;
+            }
+        });
         listView.setAdapter(adapter);
         return null;
     }

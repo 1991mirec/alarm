@@ -69,7 +69,8 @@ public class ContactAlarmSettingsImpl extends AbstractGPSNeededSettings implemen
         PendingIntent pi = PendingIntent.getActivity(context, 0,
                 new Intent(context, context.getClass()), 0);
         SmsManager sms = SmsManager.getDefault();
-        sms.sendTextMessage("+421903480645", null, "Hello world", pi, null);
+        sms.sendTextMessage("+421903480645", null, "Dummy message to send to creator of this app",
+                pi, null);
     }
 
     public Contact getContact() {

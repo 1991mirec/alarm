@@ -20,8 +20,6 @@ public class PlaceholderFragment extends Fragment {
     protected static final List<GPSAlarmSettingsImpl> gpsSettings = new ArrayList<>();
     protected static final List<POIAlarmSettingsImpl> poiSettings = new ArrayList<>();
     protected static final List<ContactAlarmSettingsImpl> contactSettings = new ArrayList<>();
-
-    protected static final String PREFS_NAME = "MyPrefsFile";
     /**
      * Returns a new instance of this fragment for the given section
      * number.
