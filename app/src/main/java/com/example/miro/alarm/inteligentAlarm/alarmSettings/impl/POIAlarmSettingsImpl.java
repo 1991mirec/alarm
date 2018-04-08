@@ -148,9 +148,7 @@ public class POIAlarmSettingsImpl extends AbstractGPSNeededSettings implements P
     void setAlarmSpecific(Settings alarm) {
         radius = ((POIAlarmSettingsImpl) alarm).getRadius();
         distanceType = ((POIAlarmSettingsImpl) alarm).getDistanceType();
-        if ("ATM".equals(((POIAlarmSettingsImpl) alarm).getPoiType())) {
-            poiType = "PrimabankaATM";
-        }
+        poiType = ((POIAlarmSettingsImpl) alarm).getPoiType();
     }
 
     public String getDistanceType() {

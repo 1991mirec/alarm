@@ -8,7 +8,6 @@ import android.widget.TextView;
 
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.adapters.holders.RepeatHolder;
-import com.google.common.base.Preconditions;
 
 import java.io.Serializable;
 
@@ -28,8 +27,6 @@ public class Repeat implements Serializable {
     private boolean saturday;
     private boolean sunday;
 
-    private transient Context context;
-
     public Repeat(final Repeat repeat) {
         this.everyDay = repeat.everyDay;
         this.noDay = repeat.noDay;
@@ -46,10 +43,6 @@ public class Repeat implements Serializable {
         everyDay = false;
         noDay = true;
         monday = tuesday = wednesday = thursday = friday = saturday = sunday = false;
-    }
-
-    public void setContext(final Context context) {
-        this.context = context;
     }
 
     public boolean isNoDay() {
@@ -111,9 +104,7 @@ public class Repeat implements Serializable {
      * Context needs to be set before accessing this method.
      * This method will return repeat strategy of alarm in string.
      */
-    @Override
-    public String toString() {
-        Preconditions.checkNotNull(context);
+    public String getDaysText(final Context context) {
         String repeat = "";
         if (noDay) {
             repeat = context.getString(R.string.tomorow);
@@ -142,25 +133,23 @@ public class Repeat implements Serializable {
                 repeat += context.getString(R.string.sunday) + " ";
             }
         }
-        context = null;
         return repeat;
     }
 
     public View setVisual(final LayoutInflater inflater, final ViewGroup parent, final RepeatHolder holder) {
-        context = inflater.getContext();
+        final Context context = inflater.getContext();
         final View row = inflater.inflate(R.layout.two_text_fields, parent, false);
         holder.changingText = (TextView) row.findViewById(R.id.changingTxtView_twoFields);
         holder.mainText = (TextView) row.findViewById(R.id.mainTxtView_twoFields);
         set(holder, context);
 
-        context = null;
         return row;
     }
 
     public void set(final RepeatHolder holder, final Context contextLocal) {
-        context =contextLocal;
+        final Context context =contextLocal;
         holder.mainText.setText(context.getResources().getText(R.string.repeat));
-        holder.changingText.setText(toString());
-        context = null;
+        holder.changingText.setText(getDaysText(context));
     }
+
 }

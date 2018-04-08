@@ -91,8 +91,9 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
         listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                removeButton((int)id);
-                refresh();
+                //removeButton((int)id);
+                //refresh();
+                //TODO must send request to remove user pending from table
                 return true;
             }
         });
@@ -156,14 +157,14 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
                     JSONObject jsonObj = new JSONObject(response);
                     final JSONArray users = jsonObj.getJSONArray("users");
                     for (int i = 0; i < users.length(); i++) {
-                        final JSONObject user = users.getJSONObject(i);
-                        final String number = user.getString("number");
+                        final String number = users.getString(i);
                         for (ContactAlarmSettingsImpl setting : contactSettings) {
                             if (setting.getContact().getId().equals(number)) {
                                 setting.getContact().setPermission(Permission.RECEIVED_PERMISSION);
                             }
                         }
                     }
+
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -176,6 +177,7 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
             }
         });
         queue.add(stringRequest);
+
     }
 
     @Override

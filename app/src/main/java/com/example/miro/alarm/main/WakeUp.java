@@ -121,7 +121,7 @@ public class WakeUp extends FragmentActivity {
                         final GPSAlarmSettingsImpl settings = gpsAlarmSettings.get(id);
                         settings.setAlarm(gpsAlarmSettings.get(id), false);
                         Utils.updateAndSaveSharedPreferancesWithGPSAlarmSettingsSpecific(context, settings);
-                        cancelGPS();
+                        //cancelGPS();
                         GPSAlarmFragment.cancel(settings, id);
 
                     } else if ("contact".contentEquals(isNormal)) { //gps alarm
@@ -131,7 +131,7 @@ public class WakeUp extends FragmentActivity {
                         final ContactAlarmSettingsImpl settings = contactAlarmSettings.get(id);
                         settings.setAlarm(contactAlarmSettings.get(id), false);
                         Utils.updateAndSaveSharedPreferancesWithContactAlarmSettingsSpecific(context, settings);
-                        cancelGPS();
+                        //cancelGPS();
                         ContactAlarmFragment.cancel(settings, id);
                     }else if ("poi".contentEquals(isNormal)) { //gps alarm
                         final List<POIAlarmSettingsImpl> poiAlarmSettings = new ArrayList<>();
@@ -140,7 +140,7 @@ public class WakeUp extends FragmentActivity {
                         final POIAlarmSettingsImpl settings = poiAlarmSettings.get(id);
                         settings.setAlarm(poiAlarmSettings.get(id), false);
                         Utils.updateAndSaveSharedPreferancesWithPOIAlarmSettingsSpecific(context, settings);
-                        cancelGPS();
+                        //cancelGPS();
                         POIAlarmFragment.cancel(settings, id);
                     }else { //inteligent alarm
                         final List<TimeAlarmSettingsImpl> timeAlarmSettings = new ArrayList<>();

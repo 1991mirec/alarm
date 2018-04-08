@@ -17,15 +17,12 @@ import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.adapters.holders.MapHolder;
 import com.example.miro.alarm.inteligentAlarm.adapters.holders.NameHolder;
 import com.example.miro.alarm.inteligentAlarm.adapters.holders.PostponeHolder;
-import com.example.miro.alarm.inteligentAlarm.adapters.holders.RepeatHolder;
 import com.example.miro.alarm.inteligentAlarm.adapters.holders.SongHolder;
 import com.example.miro.alarm.inteligentAlarm.adapters.holders.TypeHolder;
 import com.example.miro.alarm.inteligentAlarm.adapters.holders.VolumeHolder;
-import com.example.miro.alarm.inteligentAlarm.adapters.map.MapsActivity;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.GPSAlarmSettingsImpl;
 import com.google.android.gms.maps.model.LatLng;
 
-import java.text.DecimalFormat;
 import java.util.Locale;
 
 /**

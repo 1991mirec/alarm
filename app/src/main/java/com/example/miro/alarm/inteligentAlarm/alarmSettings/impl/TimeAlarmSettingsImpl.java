@@ -40,7 +40,6 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
     private transient ImageButton imgAlarm;
     private transient TextView repeatTxtView;
 
-
     public TimeAlarmSettingsImpl(final Context context, final int id) {
         super(context.getString(R.string.default_alarm));
         this.context = context;
@@ -105,9 +104,8 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
     public void updateVisuals() {
         imgAlarm.setImageResource(R.mipmap.alarm_black);
 
-        repeat.setContext(context);
         String today_tomorow = null;
-        if (repeat.toString().equals("Tomorrow")) {
+        if (repeat.getDaysText(context).equals("Tomorrow")) {
             today_tomorow = "Today";
             if (time.get(Calendar.DAY_OF_MONTH) != Calendar.getInstance().get(Calendar.DAY_OF_MONTH)) {
                 today_tomorow = "Tomorrow";
@@ -117,7 +115,7 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
         if (today_tomorow != null) {
             repeatTxtView.setText(today_tomorow);
         } else {
-            repeatTxtView.setText(repeat.toString());
+            repeatTxtView.setText(repeat.getDaysText(context));
         }
 
     }
@@ -165,9 +163,8 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
             minuteString = "0" + String.valueOf(minute);
         }
         timeTxtView.setText(hourString + ":" + minuteString);
-        repeat.setContext(context);
         String today_tomorow = null;
-        if (repeat.toString().equals("Tomorrow")) {
+        if (repeat.getDaysText(context).equals("Tomorrow")) {
             today_tomorow = "Today";
             if (time.get(Calendar.DAY_OF_MONTH) != Calendar.getInstance().get(Calendar.DAY_OF_MONTH)) {
                 today_tomorow = "Tomorrow";
@@ -177,7 +174,7 @@ public class TimeAlarmSettingsImpl extends Settings implements TimeAlarmSettings
         if (today_tomorow != null) {
             repeatTxtView.setText(today_tomorow);
         } else {
-            repeatTxtView.setText(repeat.toString());
+            repeatTxtView.setText(repeat.getDaysText(context));
         }
         nameTxtView.setText(name);
     }

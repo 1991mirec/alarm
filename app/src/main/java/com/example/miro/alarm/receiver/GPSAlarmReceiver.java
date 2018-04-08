@@ -106,7 +106,7 @@ public class GPSAlarmReceiver extends BroadcastReceiver {
             for (final ContactAlarmSettingsImpl contactSettings : contactAlarmSettings) {
                 if (contactSettings.isOn()) {
                     RequestQueue queue = Volley.newRequestQueue(context);
-                    String url = String.format("%s/getNumberLocation/%s", Utils.API_PREFIX, contactSettings.getId());
+                    String url = String.format("%s/getNumberLocation/%s", Utils.API_PREFIX, contactSettings.getContact().getId());
                     JsonObjectRequest jsonObjectRequest = new JsonObjectRequest
                             (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
 
