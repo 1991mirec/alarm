@@ -30,6 +30,7 @@ import com.android.volley.toolbox.Volley;
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.adapters.ContactAlarmAdapter;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.ContactAlarmSettingsImpl;
+import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.POIAlarmSettingsImpl;
 import com.example.miro.alarm.inteligentAlarm.enums.Permission;
 import com.example.miro.alarm.inteligentAlarm.helper.Contact;
 import com.example.miro.alarm.inteligentAlarm.helper.Utils;
@@ -174,6 +175,9 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.READ_CONTACTS}, 2);
         }
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.SEND_SMS}, 2);
+        }
         final Intent contactPickerIntent = new Intent(Intent.ACTION_PICK,
                 ContactsContract.Contacts.CONTENT_URI);
         startActivityForResult(contactPickerIntent, CONTACT_PICKER_RESULT);
@@ -187,6 +191,9 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
             final ContactAlarmSettingsImpl contactAlarmSettings = new ContactAlarmSettingsImpl(context,
                     contactSettings.size(), setUpContact);
             contactSettings.add(contactAlarmSettings);
+            if (!setUpContact.getHasApp()) {
+                contactAlarmSettings.sendInvitation();
+            }
 
             refresh();
             setUpContact = null;
@@ -226,6 +233,11 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
                     Preconditions.checkNotNull(contactSettingsReturned);
                     final int contactId = contactSettingsReturned.getId();
                     contactSettings.get(contactId).setAlarm(contactSettingsReturned, true);
+                    /*boolean wasOn = false;
+                    if (contactSettings.get(contactId).isOn()) {
+                        wasOn = true;
+                    }*/
+                    poiSettings.get(contactId).startPositionCheck();
                     refresh();
                     break;
                 case CONTACT_PICKER_RESULT:
@@ -262,7 +274,7 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
                             final String displayName = cursor.getString(columnIndex);
                             cursor.close();
                             RequestQueue queue = Volley.newRequestQueue(context);
-                            String url = String.format("%s/numberHasInstalled/%s", Utils.API_PREFIX, phoneNumber);
+                            String url = String.format("%s/numberHasInstalled/%s/%s", Utils.API_PREFIX, phoneNumber, Utils.MY_PHONE_NUMBER);
                             StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
                                 @SuppressLint("ShowToast")
                                 @Override
@@ -280,6 +292,7 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
                                     final boolean hasApp = false;
                                     setUpContact = new Contact(displayName, phoneNumber, hasApp,
                                             Permission.PENDING_PERMISSION);
+
                                     //TODO send text message with link but only if owner agrees to send message
                                     addButton();
                                 }
@@ -289,6 +302,12 @@ public class ContactAlarmFragment extends PlaceholderFragment implements Fragmen
                     }
                     break;
             }
+        }
+    }
+    public static void cancel(final ContactAlarmSettingsImpl settings, final int id) {
+        if (contactSettings.get(id) != null) {
+            contactSettings.get(id).setAlarm(settings, false);
+            poiSettings.get(id).updateVisuals();
         }
     }
 }

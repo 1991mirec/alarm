@@ -2,15 +2,23 @@ package com.example.miro.alarm.main;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Process;
+import android.provider.Settings;
 import android.renderscript.RSInvalidStateException;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TabLayout;
@@ -40,14 +48,17 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.helper.Utils;
+import com.example.miro.alarm.receiver.GPSAlarmReceiver;
 import com.example.miro.alarm.tabFragments.AlarmFragment;
 import com.example.miro.alarm.tabFragments.ContactAlarmFragment;
 import com.example.miro.alarm.tabFragments.GPSAlarmFragment;
 import com.example.miro.alarm.tabFragments.POIAlarmFragment;
 import com.example.miro.alarm.tabFragments.PlaceholderFragment;
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.common.base.Preconditions;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -58,9 +69,18 @@ import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
 
     private SharedPreferences sharedPreferences;
-
+    private static final int REQ_CODE_WAKE_UP = 70;
+    private static final long ONE_MINUTE_IN_MILLISECONDS = 60000;
     private String name = null;
     private static final String PREFS_NAME = "MyPrefsFile";
+    protected static LocationRequest lr;
+
+    static {
+        lr = new LocationRequest();
+        lr.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
+                .setFastestInterval(ONE_MINUTE_IN_MILLISECONDS)
+                .setInterval(ONE_MINUTE_IN_MILLISECONDS * 45);
+    }
 
     @SuppressLint("HardwareIds")
     @Override
@@ -88,6 +108,12 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
      */
         final ViewPager mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
+
+        if (!checkGpsStatus() || !isOnline()) {
+            Toast.makeText(getApplicationContext(), "GPS and internet access must be available",
+                    Toast.LENGTH_SHORT).show();
+            finish();
+        }
 
         final TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
@@ -118,7 +144,47 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             }
         } else {
             Utils.MY_PHONE_NUMBER = sharedPreferences.getString("myPhoneNumber", "");
+            startPositionCheck();
         }
+    }
+
+    private Intent setUpIntent() {
+        final ComponentName receiver = new ComponentName(getApplicationContext(), GPSAlarmReceiver.class);
+        final PackageManager pm = getApplicationContext().getPackageManager();
+
+        pm.setComponentEnabledSetting(receiver,
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                PackageManager.DONT_KILL_APP);
+        return new Intent(getApplicationContext(), GPSAlarmReceiver.class);
+    }
+
+    private void startPositionCheck() {
+        final FusedLocationProviderClient f = new FusedLocationProviderClient(getApplicationContext());
+        final Intent intent = setUpIntent();
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(),
+                REQ_CODE_WAKE_UP, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Utils.requestAccessFinePermissions((Activity) getApplicationContext());
+            return;
+        }
+
+        f.requestLocationUpdates(lr, pendingIntent);
+    }
+
+    public boolean checkGpsStatus() {
+        final LocationManager lm = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
+        Preconditions.checkNotNull(lm);
+        return lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+    }
+
+    public boolean isOnline() {
+        ConnectivityManager cm =
+                (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        Preconditions.checkNotNull(cm);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        return netInfo != null && netInfo.isConnectedOrConnecting();
     }
 
     @SuppressLint({"MissingPermission", "HardwareIds"})
@@ -154,7 +220,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                     getInfoWithNumber(deviceId);
                 }
             } else {
-                Process.killProcess(Process.myPid());
+                finish();
             }
         } else if (requestCode == 2) {
             for (int i = 0; i > permissions.length; i++) {
@@ -194,56 +260,57 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    /**
-     * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-     * one of the sections/tabs/pages.
-     */
-    private class SectionsPagerAdapter extends FragmentPagerAdapter {
+/**
+ * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
+ * one of the sections/tabs/pages.
+ */
+private class SectionsPagerAdapter extends FragmentPagerAdapter {
 
-        SectionsPagerAdapter(FragmentManager fm) {
-            super(fm);
-        }
-
-        @Override
-        public Fragment getItem(int position) {
-            // getItem is called to instantiate the fragment for the given page.
-            // Return a PlaceholderFragment (defined as a static inner class below).
-            switch (position) {
-                case 0:
-                    return PlaceholderFragment.newInstance(new AlarmFragment());
-                case 1:
-                    return PlaceholderFragment.newInstance(new GPSAlarmFragment());
-                case 2:
-                    return PlaceholderFragment.newInstance(new ContactAlarmFragment());
-                case 3:
-                    return PlaceholderFragment.newInstance(new POIAlarmFragment());
-                default:
-            }
-            throw new RSInvalidStateException("tab position out of bounds (0-2)!" +
-                    " Current position " + position);
-        }
-
-        @Override
-        public int getCount() {
-            // Show 3 total pages.
-            return 4;
-        }
-
-        @Override
-        public CharSequence getPageTitle(int position) {
-            switch (position) {
-                case 0:
-                    return "Alarm";
-                case 1:
-                    return "GPS Alarm";
-                case 2:
-                    return "Contact Alarm";
-                case 3:
-                    return "POI Alarm";
-            }
-            return null;
-        }
+    SectionsPagerAdapter(FragmentManager fm) {
+        super(fm);
     }
+
+    @Override
+    public Fragment getItem(int position) {
+        // getItem is called to instantiate the fragment for the given page.
+        // Return a PlaceholderFragment (defined as a static inner class below).
+        switch (position) {
+            case 0:
+                return PlaceholderFragment.newInstance(new AlarmFragment());
+            case 1:
+                return PlaceholderFragment.newInstance(new GPSAlarmFragment());
+            case 2:
+                return PlaceholderFragment.newInstance(new ContactAlarmFragment());
+            case 3:
+                return PlaceholderFragment.newInstance(new POIAlarmFragment());
+            default:
+        }
+        throw new RSInvalidStateException("tab position out of bounds (0-2)!" +
+                " Current position " + position);
+    }
+
+    @Override
+    public int getCount() {
+        // Show 3 total pages.
+        return 4;
+    }
+
+    @Override
+    public CharSequence getPageTitle(int position) {
+        switch (position) {
+            case 0:
+                return "Alarm";
+            case 1:
+                return "GPS Alarm";
+            case 2:
+                return "Contact Alarm";
+            case 3:
+                return "POI Alarm";
+        }
+        return null;
+    }
+
+}
 
     public void getInfoWithNumber(final String deviceId) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -310,7 +377,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.cancel();
-                Process.killProcess(Process.myPid());
+                finish();
             }
         });
 
@@ -347,6 +414,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                                             Toast.LENGTH_SHORT).show();
                                     sharedPreferences.edit()
                                             .putBoolean("FirstTimeContact", false).apply();
+                                    startPositionCheck();
                                 }
                             }, new Response.ErrorListener() {
 
@@ -357,10 +425,11 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                                                 Toast.LENGTH_SHORT).show();
                                         sharedPreferences.edit()
                                                 .putBoolean("FirstTimeContact", false).apply();
+                                        startPositionCheck();
                                     } else {
                                         Toast.makeText(getApplicationContext(), "User creation failed",
                                                 Toast.LENGTH_SHORT).show();
-                                        Process.killProcess(Process.myPid());
+                                        finish();
                                     }
                                 }
                             });

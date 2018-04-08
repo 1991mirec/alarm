@@ -7,22 +7,42 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.android.volley.Cache;
+import com.android.volley.Network;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.BasicNetwork;
+import com.android.volley.toolbox.DiskBasedCache;
+import com.android.volley.toolbox.HurlStack;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.RequestFuture;
+import com.android.volley.toolbox.Volley;
 import com.example.miro.alarm.R;
+import com.example.miro.alarm.inteligentAlarm.alarmSettings.Settings;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.api.POIAlarmSettings;
 import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
 import com.example.miro.alarm.inteligentAlarm.helper.Utils;
+import com.google.android.gms.maps.model.LatLng;
 
+import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class POIAlarmSettingsImpl extends AbstractGPSNeededSettings implements POIAlarmSettings, Serializable {
 
-    private transient Context context;
-    private transient ImageButton imgAlarm;
     private String poiType;
     private String distanceType;
 
@@ -31,7 +51,7 @@ public class POIAlarmSettingsImpl extends AbstractGPSNeededSettings implements P
         super(context.getString(R.string.default_alarm));
         this.context = context;
         setId(id);
-        poiType = "Bank";
+        poiType = "ATM";
         this.radius = 1000;
         this.distanceType = context.getResources().getString(R.string.kilometers);
     }
@@ -46,6 +66,9 @@ public class POIAlarmSettingsImpl extends AbstractGPSNeededSettings implements P
         this.radius = radius;
         this.distanceType = distanceType;
         setId(id);
+/*        if (isOn && pendingIntent == null) {
+            startPositionCheck(false);
+        }*/
     }
 
     public void setVisuals(final View view) {
@@ -61,7 +84,12 @@ public class POIAlarmSettingsImpl extends AbstractGPSNeededSettings implements P
             public void onClick(View v) {
                 isOn ^= true;
                 setVisuals(view);
-
+                if (isOn) {
+                    startPositionCheck();
+                } else {
+                    //isOnCount--;
+                    cancel();
+                }
                 try {
                     Utils.updateAndSaveSharedPreferancesWithPOIAlarmSettingsSpecific(context, poiAlarmSettings);
                 } catch (JSONException e) {
@@ -105,16 +133,24 @@ public class POIAlarmSettingsImpl extends AbstractGPSNeededSettings implements P
         return poiTypes;
     }
 
-    public void setAlarm(final POIAlarmSettingsImpl alarm, final boolean isOn) {
+    /*public void setAlarm(final POIAlarmSettingsImpl alarm, final boolean isOn) {
         volume = alarm.getVolume();
         radius = alarm.getRadius();
         song = alarm.getSong();
         name = alarm.getName();
         type = alarm.getType();
         postpone = alarm.getPostpone();
-        distanceType = alarm.getDistanceType();
-        poiType = alarm.getPoiType();
+
         this.isOn = isOn;
+    }*/
+
+    @Override
+    void setAlarmSpecific(Settings alarm) {
+        radius = ((POIAlarmSettingsImpl) alarm).getRadius();
+        distanceType = ((POIAlarmSettingsImpl) alarm).getDistanceType();
+        if ("ATM".equals(((POIAlarmSettingsImpl) alarm).getPoiType())) {
+            poiType = "PrimabankaATM";
+        }
     }
 
     public String getDistanceType() {
@@ -126,8 +162,41 @@ public class POIAlarmSettingsImpl extends AbstractGPSNeededSettings implements P
     }
 
     @Override
-    void setUpLocalIntent(final Intent intent) {
-        intent.putExtra("gpsAlarmType", "poi");
+    public List<LatLng> getCoordinates() {
+        //TODO never called - does not work properly. it gets stuck used in GPSalarmREceiver
+        RequestQueue queue = Volley.newRequestQueue(context);
+
+        String url = String.format("%s/getPoiTypeLocation/%s", Utils.API_PREFIX, poiType);
+        final ArrayList<LatLng> finalList = new ArrayList<>();
+
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest
+                (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        final JSONArray positions;
+                        try {
+                            positions = response.getJSONArray("positions");
+                            for (int i = 0; i < positions.length(); i++) {
+                                final JSONObject jsonObject = positions.getJSONObject(i);
+                                final String latitude = jsonObject.getString("latitude");
+                                final String longitude = jsonObject.getString("longitude");
+                                final LatLng latLng = new LatLng(Long.parseLong(latitude), Long.parseLong(longitude));
+                                finalList.add(latLng);
+                            }
+                        } catch (JSONException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                }, new Response.ErrorListener() {
+
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                    }
+                });
+        queue.add(jsonObjectRequest);
+
+        return finalList;
     }
 
     @Override

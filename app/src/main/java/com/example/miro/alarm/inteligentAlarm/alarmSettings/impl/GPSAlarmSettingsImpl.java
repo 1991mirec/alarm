@@ -2,13 +2,12 @@ package com.example.miro.alarm.inteligentAlarm.alarmSettings.impl;
 
 
 import android.content.Context;
-import android.content.Intent;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
 import com.example.miro.alarm.R;
-import com.example.miro.alarm.inteligentAlarm.alarmSettings.api.GPSAlarmSettings;
+import com.example.miro.alarm.inteligentAlarm.alarmSettings.Settings;
 import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
 import com.example.miro.alarm.inteligentAlarm.helper.Utils;
 import com.google.android.gms.maps.model.LatLng;
@@ -16,9 +15,11 @@ import com.google.android.gms.maps.model.LatLng;
 import org.json.JSONException;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
-public class GPSAlarmSettingsImpl extends AbstractGPSNeededSettings implements GPSAlarmSettings, Serializable {
+public class GPSAlarmSettingsImpl extends AbstractGPSNeededSettings implements  Serializable {
 
     private double latitude;
     private double longitude;
@@ -43,9 +44,9 @@ public class GPSAlarmSettingsImpl extends AbstractGPSNeededSettings implements G
         this.longitude = longitude;
         this.radius = radius;
         setId(id);
-        if (isOn && pendingIntent == null) {
+/*        if (isOn && pendingIntent == null) {
             startPositionCheck(false);
-        }
+        }*/
     }
 
     public void setVisuals(final View view) {
@@ -60,9 +61,9 @@ public class GPSAlarmSettingsImpl extends AbstractGPSNeededSettings implements G
                 isOn ^= true;
                 setVisuals(view);
                 if (isOn) {
-                    startPositionCheck(false);
+                    startPositionCheck();
                 } else {
-                    isOnCount--;
+                    //isOnCount--;
                     cancel();
                 }
                 try {
@@ -88,29 +89,27 @@ public class GPSAlarmSettingsImpl extends AbstractGPSNeededSettings implements G
         nameTxtView.setText(name);
     }
 
-    public LatLng getCoordinates() {
-        return new LatLng(latitude, longitude);
+    @Override
+    public List<LatLng> getCoordinates() {
+        List<LatLng> finalList = new ArrayList<>();
+        finalList.add(new LatLng(latitude, longitude));
+        return finalList;
     }
 
-    public void setAlarm(final GPSAlarmSettingsImpl alarm, final boolean isOn) {
+/*    public void setAlarm(final GPSAlarmSettingsImpl alarm, final boolean isOn) {
         volume = alarm.getVolume();
-        radius = alarm.getRadius();
+
         song = alarm.getSong();
         name = alarm.getName();
         type = alarm.getType();
         postpone = alarm.getPostpone();
-        setLatLng(alarm.getCoordinates());
+
         this.isOn = isOn;
-    }
+    }*/
 
     public void setLatLng(final LatLng latLng) {
         this.latitude = latLng.latitude;
         this.longitude = latLng.longitude;
-    }
-
-    @Override
-    void setUpLocalIntent(final Intent intent) {
-        intent.putExtra("gpsAlarmType", "gps");
     }
 
     @Override
@@ -120,6 +119,12 @@ public class GPSAlarmSettingsImpl extends AbstractGPSNeededSettings implements G
         } catch (JSONException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    void setAlarmSpecific(Settings alarm) {
+        radius = ((GPSAlarmSettingsImpl)alarm).getRadius();
+        setLatLng(((GPSAlarmSettingsImpl)alarm).getCoordinates().get(0));
     }
 
 }

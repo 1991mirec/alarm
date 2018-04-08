@@ -17,7 +17,9 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import com.example.miro.alarm.R;
+import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.ContactAlarmSettingsImpl;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.GPSAlarmSettingsImpl;
+import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.POIAlarmSettingsImpl;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.TimeAlarmSettingsImpl;
 import com.example.miro.alarm.inteligentAlarm.enums.Type;
 import com.example.miro.alarm.inteligentAlarm.helper.Repeat;
@@ -25,7 +27,9 @@ import com.example.miro.alarm.inteligentAlarm.helper.Utils;
 import com.example.miro.alarm.receiver.GPSAlarmReceiver;
 import com.example.miro.alarm.receiver.TimeAlarmReceiver;
 import com.example.miro.alarm.tabFragments.AlarmFragment;
+import com.example.miro.alarm.tabFragments.ContactAlarmFragment;
 import com.example.miro.alarm.tabFragments.GPSAlarmFragment;
+import com.example.miro.alarm.tabFragments.POIAlarmFragment;
 import com.example.miro.alarm.tabFragments.PlaceholderFragment;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.common.base.Preconditions;
@@ -66,10 +70,11 @@ public class WakeUp extends FragmentActivity {
         final Intent intent = getIntent();
         final String name = intent.getExtras().getString("name");
         final String isNormal = intent.getExtras().getString("isNormal");
+        Preconditions.checkNotNull(isNormal);
         final Repeat repeatDays = (Repeat) intent.getSerializableExtra("RepeatDays");
         final int houre = intent.getIntExtra("houre", 0);
         final int minute = intent.getIntExtra("minute", 0);
-        if ("normal".contentEquals(isNormal) || "gps".contentEquals(isNormal)) {
+        if (!"inteligent".contentEquals(isNormal)) {
             volume = intent.getExtras().getInt("volume");
         } else {
             volume = 10;
@@ -118,7 +123,26 @@ public class WakeUp extends FragmentActivity {
                         Utils.updateAndSaveSharedPreferancesWithGPSAlarmSettingsSpecific(context, settings);
                         cancelGPS();
                         GPSAlarmFragment.cancel(settings, id);
-                    } else { //inteligent alarm
+
+                    } else if ("contact".contentEquals(isNormal)) { //gps alarm
+                        final List<ContactAlarmSettingsImpl> contactAlarmSettings = new ArrayList<>();
+
+                        contactAlarmSettings.addAll(Utils.loadSharedPreferancesWithContactAlarmSettings(context));
+                        final ContactAlarmSettingsImpl settings = contactAlarmSettings.get(id);
+                        settings.setAlarm(contactAlarmSettings.get(id), false);
+                        Utils.updateAndSaveSharedPreferancesWithContactAlarmSettingsSpecific(context, settings);
+                        cancelGPS();
+                        ContactAlarmFragment.cancel(settings, id);
+                    }else if ("poi".contentEquals(isNormal)) { //gps alarm
+                        final List<POIAlarmSettingsImpl> poiAlarmSettings = new ArrayList<>();
+
+                        poiAlarmSettings.addAll(Utils.loadSharedPreferancesWithPOIAlarmSettings(context));
+                        final POIAlarmSettingsImpl settings = poiAlarmSettings.get(id);
+                        settings.setAlarm(poiAlarmSettings.get(id), false);
+                        Utils.updateAndSaveSharedPreferancesWithPOIAlarmSettingsSpecific(context, settings);
+                        cancelGPS();
+                        POIAlarmFragment.cancel(settings, id);
+                    }else { //inteligent alarm
                         final List<TimeAlarmSettingsImpl> timeAlarmSettings = new ArrayList<>();
                         timeAlarmSettings.addAll(Utils.loadSharedPreferancesWithAlarmSettingsClock(context));
                         final TimeAlarmSettingsImpl settings = timeAlarmSettings.get(id);
@@ -128,7 +152,6 @@ public class WakeUp extends FragmentActivity {
                         final long finalTime = TimeAlarmSettingsImpl.getTimeInMilis(settings.getRepeat(), time);
                         cancelAlarmOrRestart(false, finalTime, false, settings);
                         Utils.updateAndSaveSharedPreferancesWithAlarmSettingsClockSpecific(context, settings);
-
                         //AlarmFragment.cancel(id, repeatDays, houre, minute, false);
                     }
                 } catch (final JSONException e) {

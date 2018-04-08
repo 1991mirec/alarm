@@ -90,12 +90,12 @@ public class GPSAlarmFragment extends PlaceholderFragment implements FragmentSet
                     .getSerializable("gpsSettings");
 
             final int id = gpsSettingsReturned.getId();
-            boolean wasOn = false;
+           /* boolean wasOn = false;
             if (gpsSettings.get(id).isOn()) {
                 wasOn = true;
-            }
+            }*/
             gpsSettings.get(id).setAlarm(gpsSettingsReturned, true);
-            gpsSettings.get(id).startPositionCheck(wasOn);
+            gpsSettings.get(id).startPositionCheck();
             refresh();
         }
     }

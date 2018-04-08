@@ -33,7 +33,7 @@ public class Utils {
     public static final long ONE_MINUTE_MILISECONDS = 60000;
     public static final long ONE_DAY_MILISECONDS = 86400000;
     public static String MY_PHONE_NUMBER;
-    public static final String API_PREFIX = "http://192.168.0.103:15001";
+    public static final String API_PREFIX = "http://85.248.177.125:15001";
 
     private static final String PREFS_NAME = "MyPrefsFile";
 
@@ -173,8 +173,8 @@ public class Utils {
             obj.put("songName", settings.getSong().getName());
             obj.put("type", settings.getType().getType().ordinal());
             obj.put("radius", settings.getRadius());
-            obj.put("longitude", settings.getCoordinates().longitude);
-            obj.put("latitude", settings.getCoordinates().latitude);
+            obj.put("longitude", settings.getCoordinates().get(0).longitude);
+            obj.put("latitude", settings.getCoordinates().get(0).latitude);
             obj.put("volume", settings.getVolume());
             final JSONObject postpone = new JSONObject();
             postpone.put("isOn", settings.getPostpone().isOn());

@@ -155,7 +155,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
         final TextView textRadius = (TextView) findViewById(R.id.mapEditText);
         textRadius.setText(String.valueOf((double) settings.getRadius() / 1000));
-        setButton(settings.getCoordinates());
+        setButton(settings.getCoordinates().get(0));
     }
 
     private void setButton(final LatLng latLng) {

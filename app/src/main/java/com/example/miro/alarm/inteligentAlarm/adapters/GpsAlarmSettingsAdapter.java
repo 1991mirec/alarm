@@ -71,9 +71,9 @@ public class GpsAlarmSettingsAdapter extends BaseAdapter {
                     mapHolder.mainTextRight = (TextView) row.findViewById(R.id.mainTxtView2_fourFields);
                     mapHolder.mainTextLeft.setText("Position");
                     final String lat = String.format(Locale.ENGLISH, "%.2f",
-                            settings.getCoordinates().latitude);
+                            settings.getCoordinates().get(0).latitude);
                     final String lon = String.format(Locale.ENGLISH, "%.2f",
-                            settings.getCoordinates().longitude);
+                            settings.getCoordinates().get(0).longitude);
                     mapHolder.changingTextLeft.setText("latitude/longitude: " + lat + "/" + lon);
                     mapHolder.mainTextRight.setText("Radius");
                     double num = (double) settings.getRadius() / 1000;
@@ -153,9 +153,9 @@ public class GpsAlarmSettingsAdapter extends BaseAdapter {
                     final MapHolder mapHolder = (MapHolder) convertView.getTag();
                     mapHolder.mainTextLeft.setText("Position");
                     final String lat = String.format(Locale.ENGLISH, "%.2f",
-                            settings.getCoordinates().latitude);
+                            settings.getCoordinates().get(0).latitude);
                     final String lon = String.format(Locale.ENGLISH, "%.2f",
-                            settings.getCoordinates().longitude);
+                            settings.getCoordinates().get(0).longitude);
                     mapHolder.changingTextLeft.setText("latitude/longitude: " + lat + "/" + lon);
                     mapHolder.mainTextRight.setText("Radius");
                     double num = (double) settings.getRadius() / 1000;
@@ -196,7 +196,8 @@ public class GpsAlarmSettingsAdapter extends BaseAdapter {
         notifyDataSetChanged();
     }
 
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {if (resultCode == Activity.RESULT_OK) {
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode == Activity.RESULT_OK) {
             final double longitude = (double) data.getExtras().getSerializable("longitude");
             final double latitude = (double) data.getExtras().getSerializable("latitude");
             this.settings.setLatLng(new LatLng(latitude, longitude));

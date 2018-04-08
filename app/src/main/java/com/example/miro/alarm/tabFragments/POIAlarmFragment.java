@@ -15,6 +15,7 @@ import android.widget.ListView;
 
 import com.example.miro.alarm.R;
 import com.example.miro.alarm.inteligentAlarm.adapters.PoiAlarmAdapter;
+import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.GPSAlarmSettingsImpl;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.impl.POIAlarmSettingsImpl;
 import com.example.miro.alarm.inteligentAlarm.helper.Utils;
 import com.example.miro.alarm.main.PoiAlarmSettingActivity;
@@ -65,6 +66,11 @@ public class POIAlarmFragment extends PlaceholderFragment implements FragmentSet
 
             final int id = poiSettingsReturned.getId();
             poiSettings.get(id).setAlarm(poiSettingsReturned, true);
+           /* boolean wasOn = false;
+            if (poiSettings.get(id).isOn()) {
+                wasOn = true;
+            }*/
+            poiSettings.get(id).startPositionCheck();
             refresh();
         }
     }
@@ -121,5 +127,11 @@ public class POIAlarmFragment extends PlaceholderFragment implements FragmentSet
         }
     }
 
+    public static void cancel(final POIAlarmSettingsImpl settings, final int id) {
+        if (poiSettings.get(id) != null) {
+            poiSettings.get(id).setAlarm(settings, false);
+            poiSettings.get(id).updateVisuals();
+        }
+    }
 
 }

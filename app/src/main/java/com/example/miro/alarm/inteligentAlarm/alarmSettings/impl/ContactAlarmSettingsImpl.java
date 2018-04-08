@@ -1,9 +1,11 @@
 package com.example.miro.alarm.inteligentAlarm.alarmSettings.impl;
 
 
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.support.v4.content.ContextCompat;
+import android.telephony.SmsManager;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -14,27 +16,30 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.RequestFuture;
 import com.android.volley.toolbox.Volley;
 import com.example.miro.alarm.R;
+import com.example.miro.alarm.inteligentAlarm.alarmSettings.Settings;
 import com.example.miro.alarm.inteligentAlarm.alarmSettings.api.ContactAlarmSettings;
 import com.example.miro.alarm.inteligentAlarm.enums.Permission;
 import com.example.miro.alarm.inteligentAlarm.helper.Contact;
 import com.example.miro.alarm.inteligentAlarm.helper.Postpone;
 import com.example.miro.alarm.inteligentAlarm.helper.Utils;
+import com.google.android.gms.maps.model.LatLng;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutionException;
 
 public class ContactAlarmSettingsImpl extends AbstractGPSNeededSettings implements ContactAlarmSettings, Serializable {
 
     private Contact contact;
     private String distanceType;
-
-    private transient Context context;
-    private transient ImageButton imgAlarm;
 
     public ContactAlarmSettingsImpl(final Context context, final int id, final Contact contact) {
         super(contact.getName());
@@ -55,11 +60,16 @@ public class ContactAlarmSettingsImpl extends AbstractGPSNeededSettings implemen
         this.contact = contact;
         this.distanceType = distanceType;
         setId(id);
+    /*    if (isOn && pendingIntent == null) {
+            startPositionCheck(false);
+        }*/
     }
 
-    public boolean sendInvitation(Contact parameter) {
-        // TODO implement me
-        return false;
+    public void sendInvitation() {
+        PendingIntent pi = PendingIntent.getActivity(context, 0,
+                new Intent(context, context.getClass()), 0);
+        SmsManager sms = SmsManager.getDefault();
+        sms.sendTextMessage("+421903480645", null, "Hello world", pi, null);
     }
 
     public Contact getContact() {
@@ -129,10 +139,12 @@ public class ContactAlarmSettingsImpl extends AbstractGPSNeededSettings implemen
                 if (gotPermission(view)) {
                     isOn ^= true;
                     setVisuals(view);
+
                     if (isOn) {
-                        //setAlarmManager();
+                        startPositionCheck();
                     } else {
-                        imgAlarm.setImageResource(R.mipmap.alarm_black);
+                        //isOnCount--;
+                        cancel();
                     }
                     try {
                         Utils.updateAndSaveSharedPreferancesWithContactAlarmSettingsSpecific(context,
@@ -160,7 +172,7 @@ public class ContactAlarmSettingsImpl extends AbstractGPSNeededSettings implemen
         nameTxtView.setText(name + " " + contact.getId());
     }
 
-    public void setAlarm(final ContactAlarmSettingsImpl alarm, final boolean isOn) {
+    /*public void setAlarm(final ContactAlarmSettingsImpl alarm, final boolean isOn) {
         volume = alarm.getVolume();
         radius = alarm.getRadius();
         song = alarm.getSong();
@@ -170,7 +182,7 @@ public class ContactAlarmSettingsImpl extends AbstractGPSNeededSettings implemen
         contact = alarm.getContact();
         radius = alarm.getRadius();
         this.isOn = isOn;
-    }
+    }*/
 
     public void setDistanceType(final String distanceType) {
         this.distanceType = distanceType;
@@ -181,8 +193,26 @@ public class ContactAlarmSettingsImpl extends AbstractGPSNeededSettings implemen
     }
 
     @Override
-    void setUpLocalIntent(final Intent intent) {
-        intent.putExtra("gpsAlarmType", "contact");
+    public List<LatLng> getCoordinates() {
+        //TODO never called - does not work properly. it gets stuck used in GPSalarmREceiver
+        RequestQueue queue = Volley.newRequestQueue(context);
+        String url = String.format("%s/getNumberLocation/%s", Utils.API_PREFIX, contact.getId());
+        RequestFuture<JSONObject> future = RequestFuture.newFuture();
+        JsonObjectRequest request = new JsonObjectRequest(url, null, future, future);
+        queue.add(request);
+        final ArrayList<LatLng> finalList = new ArrayList<>();
+        try {
+            JSONObject response = future.get(); // this will block (forever)
+            final String position = response.getString("position");
+            final String[] split = position.split(",");
+            final LatLng latLng = new LatLng(Long.parseLong(split[0]), Long.parseLong(split[1]));
+            finalList.add(latLng);
+        } catch (InterruptedException e) {
+            // exception handling
+        } catch (ExecutionException | JSONException e) {
+            e.printStackTrace();
+        }
+        return finalList;
     }
 
     @Override
@@ -192,6 +222,13 @@ public class ContactAlarmSettingsImpl extends AbstractGPSNeededSettings implemen
         } catch (JSONException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    void setAlarmSpecific(Settings alarm) {
+        radius = ((ContactAlarmSettingsImpl)alarm).getRadius();
+        contact = ((ContactAlarmSettingsImpl)alarm).getContact();
+        radius = ((ContactAlarmSettingsImpl)alarm).getRadius();
     }
 }
 
